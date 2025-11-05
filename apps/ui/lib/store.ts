@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Global Store
+ * 🔷 TEZERAKT - Quant Terminal - Global Store
  * Zustand store for theme, audio, and app state management
  */
 

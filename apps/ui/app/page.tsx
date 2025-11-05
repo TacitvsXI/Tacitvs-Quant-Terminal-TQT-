@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Dashboard
+ * 🔷 TEZERAKT - Quant Terminal - Dashboard
  * Main terminal overview with system metrics
  */
 

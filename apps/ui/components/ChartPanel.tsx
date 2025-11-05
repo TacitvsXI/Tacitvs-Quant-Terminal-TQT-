@@ -7,7 +7,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Chart from './Chart';
-import { fetchCandles, fetchIndicator, Candle } from '@/lib/api';
+import CVDChart from './CVDChart';
+import { fetchCandles, fetchIndicator, fetchCVD, Candle } from '@/lib/api';
 import { playBeep } from '@/lib/audio';
 import { useAppStore } from '@/lib/store';
 
@@ -41,9 +42,11 @@ export function ChartPanel() {
   const [timeframe, setTimeframe] = useState<string>('1d');
   const [selectedIndicator, setSelectedIndicator] = useState<string>('none');
   const [barsLimit, setBarsLimit] = useState<number>(15000);
+  const [showCVD, setShowCVD] = useState<boolean>(false);
   
   const [candles, setCandles] = useState<Candle[]>([]);
   const [indicators, setIndicators] = useState<IndicatorOverlay[]>([]);
+  const [cvdData, setCvdData] = useState<Array<{ time: number; value: number; delta: number }>>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,24 +74,45 @@ export function ChartPanel() {
             barsLimit
           );
           
-          setIndicators([{
-            name: indicatorConfig.name,
-            data: indicatorData,
-            color: indicatorConfig.color
-          }]);
+          // Handle both regular indicators and BBands
+          if (Array.isArray(indicatorData) && indicatorData.length > 0) {
+            if ('value' in indicatorData[0]) {
+              // Regular indicator (RSI, EMA, SMA)
+              setIndicators([{
+                name: indicatorConfig.name,
+                data: indicatorData as Array<{ time: number; value: number }>,
+                color: indicatorConfig.color
+              }]);
+            } else {
+              // BBands - use middle line for now
+              setIndicators([{
+                name: indicatorConfig.name,
+                data: (indicatorData as any[]).map(d => ({ time: d.time, value: d.middle })),
+                color: indicatorConfig.color
+              }]);
+            }
+          }
         }
       } else {
         setIndicators([]);
       }
       
-      playBeep('notification', audioEnabled);
+      // Fetch CVD if enabled
+      if (showCVD) {
+        const cvd = await fetchCVD(symbol, timeframe, barsLimit);
+        setCvdData(cvd);
+      } else {
+        setCvdData([]);
+      }
+      
+      playBeep('sim_done', audioEnabled);
     } catch (err) {
       console.error('Error loading chart data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load chart data');
     } finally {
       setIsLoading(false);
     }
-  }, [symbol, timeframe, selectedIndicator, barsLimit, audioEnabled]);
+  }, [symbol, timeframe, selectedIndicator, barsLimit, showCVD, audioEnabled]);
 
   // Load chart data
   useEffect(() => {
@@ -97,22 +121,22 @@ export function ChartPanel() {
 
   const handleSymbolChange = (newSymbol: string) => {
     setSymbol(newSymbol);
-    playBeep('click', audioEnabled);
+    playBeep('focus', audioEnabled);
   };
 
   const handleTimeframeChange = (newTf: string) => {
     setTimeframe(newTf);
-    playBeep('click', audioEnabled);
+    playBeep('focus', audioEnabled);
   };
 
   const handleIndicatorChange = (newIndicator: string) => {
     setSelectedIndicator(newIndicator);
-    playBeep('click', audioEnabled);
+    playBeep('focus', audioEnabled);
   };
 
   const handleLimitChange = (newLimit: number) => {
     setBarsLimit(newLimit);
-    playBeep('click', audioEnabled);
+    playBeep('focus', audioEnabled);
   };
 
   return (
@@ -203,6 +227,26 @@ export function ChartPanel() {
           </select>
         </div>
 
+        {/* CVD Toggle */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="cvd-toggle"
+            checked={showCVD}
+            onChange={(e) => {
+              setShowCVD(e.target.checked);
+              playBeep('focus', audioEnabled);
+            }}
+            className="w-4 h-4 accent-[var(--accent)]"
+          />
+          <label 
+            htmlFor="cvd-toggle" 
+            className="text-xs font-mono text-[var(--fg)] cursor-pointer hover:text-[var(--accent)] transition-colors"
+          >
+            CVD
+          </label>
+        </div>
+
         {/* Refresh Button */}
         <button
           onClick={loadChartData}
@@ -228,15 +272,27 @@ export function ChartPanel() {
         </div>
       )}
 
-      {/* Chart */}
+      {/* Main Chart */}
       {!error && (
         <Chart
           symbol={symbol}
           timeframe={timeframe}
           candles={candles}
           indicators={indicators}
-          height={500}
+          height={showCVD ? 400 : 500}
         />
+      )}
+
+      {/* CVD Chart (if enabled) */}
+      {!error && showCVD && cvdData.length > 0 && (
+        <div className="mt-4">
+          <CVDChart
+            symbol={symbol}
+            timeframe={timeframe}
+            data={cvdData}
+            height={200}
+          />
+        </div>
       )}
     </div>
   );

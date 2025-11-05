@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Telemetry Strip
+ * 🔷 TEZERAKT QUANT TERMINAL - Telemetry Strip
  * Bottom status bar with system telemetry
  */
 

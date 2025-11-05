@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Command Palette
+ * 🔷 TEZERAKT QUANT TERMINAL - Command Palette
  * ⌘K system command interface
  */
 

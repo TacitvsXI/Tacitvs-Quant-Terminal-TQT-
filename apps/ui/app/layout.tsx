@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Root Layout
+ * 🔷 TEZERAKT - Quant Terminal - Root Layout
  * Retro Cyberpunk + Post-Military Industrial
  */
 
@@ -20,8 +20,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tacitvs Quant Terminal",
+  title: "TEZERAKT - Quant Terminal",
   description: "Professional quant trading terminal - EV-first, venue-agnostic",
+  icons: {
+    icon: [
+      { url: '/tezerakt-logo-green.svg', type: 'image/svg+xml' },
+      { url: '/icon', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: [
+      { url: '/apple-icon', type: 'image/png', sizes: '180x180' },
+    ],
+  },
 };
 
 export default function RootLayout({

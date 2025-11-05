@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - OPS Module
+ * 🔷 TEZERAKT - Quant Terminal - OPS Module
  * Live Execution • Risk Management • Order Flow
  */
 

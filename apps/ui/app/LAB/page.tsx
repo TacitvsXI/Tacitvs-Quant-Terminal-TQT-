@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - LAB Module
+ * 🔷 TEZERAKT - Quant Terminal - LAB Module
  * Research, Backtests, Monte Carlo, Walk-Forward
  */
 

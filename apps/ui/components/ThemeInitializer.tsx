@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Theme Initializer
+ * 🔷 TEZERAKT QUANT TERMINAL - Theme Initializer
  * Client component to initialize theme on mount
  */
 

@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Navigation
+ * 🔷 TEZERAKT - Quant Terminal - Navigation
  * Terminal-style navigation bar with API status
  */
 
@@ -8,7 +8,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TacitvsLogoMinimal } from './TacitvsLogo';
+import { TacitvsLogo } from './TacitvsLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { AudioToggle } from './AudioToggle';
 import { useAppStore } from '@/lib/store';
@@ -42,14 +42,16 @@ export const Navigation: React.FC = () => {
       <div className="max-w-[1800px] mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo & Title */}
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-3 hover-glow transition-all">
-            <TacitvsLogoMinimal size={28} />
+          <Link href="/" className="flex items-center gap-4 hover-glow transition-all group">
+            <div className="transition-transform group-hover:scale-110 duration-200">
+              <TacitvsLogo size={42} />
+            </div>
             <div>
-              <h1 className="text-sm font-mono font-bold text-[var(--accent)] glow">
-                TACITVS
+              <h1 className="text-lg font-mono font-bold text-[var(--accent)] glow-strong tracking-wider">
+                TEZERAKT
               </h1>
-              <p className="text-[10px] font-mono text-[var(--fg)] -mt-0.5">
-                QUANT TERMINAL
+              <p className="text-[10px] font-mono text-[var(--fg)] -mt-1 tracking-wide opacity-70">
+                Quant Terminal
               </p>
             </div>
           </Link>

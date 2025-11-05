@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - API Client
+ * 🔷 TEZERAKT - Quant Terminal - API Client
  * FastAPI backend integration
  */
 
@@ -272,6 +272,30 @@ export async function fetchAvailableIndicators(): Promise<{
   } catch (error) {
     console.error('Error fetching available indicators:', error);
     return { indicators: [] };
+  }
+}
+
+/**
+ * Fetch CVD (Cumulative Volume Delta) data
+ */
+export async function fetchCVD(
+  symbol: string,
+  timeframe: string,
+  limit: number = 15000
+): Promise<Array<{ time: number; value: number; delta: number }>> {
+  const url = `${API_BASE_URL}/api/cvd?symbol=${symbol}&tf=${timeframe}&limit=${limit}`;
+  
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CVD: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching CVD:', error);
+    throw error;
   }
 }
 

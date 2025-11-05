@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Audio System
+ * 🔷 TEZERAKT - Quant Terminal - Audio System
  * Web Audio API for system sounds and feedback
  */
 
