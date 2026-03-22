@@ -126,9 +126,13 @@ app = FastAPI(
 
 # Добавляем CORS middleware (чтобы Next.js UI мог обращаться к API)
 # В production нужно ограничить origins до конкретных доменов
+import os
+_cors_origins = os.getenv("CORS_ORIGINS", "*")
+_origins = [o.strip() for o in _cors_origins.split(",")] if _cors_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В production: ["http://localhost:3000"]
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -421,9 +425,10 @@ if __name__ == "__main__":
     # host="0.0.0.0" - слушаем на всех интерфейсах
     # port=8080 - порт
     # reload=True - автоперезагрузка при изменении кода (только для dev!)
+    port = int(os.getenv("PORT", "8080"))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8080,
+        port=port,
         reload=True
     )
