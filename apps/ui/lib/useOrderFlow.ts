@@ -65,6 +65,15 @@ export function useCVDHistory(limit = 500) {
   });
 }
 
+export function useCVDEstimated(coin = 'BTC', interval = '5m', limit = 500) {
+  return useQuery({
+    queryKey: ['hl-cvd-estimated', coin, interval, limit],
+    queryFn: () => orderflowApi.cvdEstimated(coin, interval, limit),
+    refetchInterval: 30_000,
+    staleTime: 30_000,
+  });
+}
+
 export function useFootprint() {
   return useQuery({
     queryKey: ['hl-footprint'],

@@ -11,9 +11,15 @@ import {
 } from 'lightweight-charts';
 import { useAppStore } from '@/lib/store';
 import { getChartThemeColors } from '@/lib/theme';
-import { useCVDHistory, useCVD } from '@/lib/useOrderFlow';
+import { useCVDEstimated, useCVD } from '@/lib/useOrderFlow';
 
-export default function CVDLive({ height = 160 }: { height?: number }) {
+interface CVDLiveProps {
+  height?: number;
+  interval?: string;
+  limit?: number;
+}
+
+export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: CVDLiveProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Line'> | null>(null);
@@ -23,7 +29,7 @@ export default function CVDLive({ height = 160 }: { height?: number }) {
 
   const { theme } = useAppStore();
 
-  const { data: history } = useCVDHistory(1000);
+  const { data: history } = useCVDEstimated('BTC', interval, limit);
   const { data: cvdState } = useCVD();
 
   const chartData = useMemo((): LineData[] => {

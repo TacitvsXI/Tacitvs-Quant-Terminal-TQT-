@@ -70,7 +70,7 @@ export default function FlowPage() {
 
             {/* CVD chart */}
             <div className="min-h-0">
-              <CVDLive height={130} />
+              <CVDLive height={130} interval={tf} limit={500} />
             </div>
 
             {/* Footprint */}

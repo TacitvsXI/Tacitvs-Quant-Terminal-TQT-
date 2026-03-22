@@ -150,6 +150,9 @@ export const orderflowApi = {
   cvdHistory: (limit = 500) =>
     get<CVDPoint[]>(`/api/hl/cvd/history?limit=${limit}`),
 
+  cvdEstimated: (coin = 'BTC', interval = '5m', limit = 500) =>
+    get<CVDPoint[]>(`/api/hl/cvd/estimated?coin=${coin}&interval=${interval}&limit=${limit}`),
+
   footprint: () =>
     get<Record<string, FootprintLevel>>(`/api/hl/footprint`),
 

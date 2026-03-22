@@ -253,9 +253,70 @@ async def get_cvd() -> dict[str, Any]:
 async def get_cvd_history(
     limit: int = Query(500, ge=1, le=5000),
 ) -> list[dict[str, Any]]:
-    """CVD time series for charting."""
+    """CVD time series for charting (live tick-level data only)."""
     _ensure_ws()
     return _aggregator.get_cvd_history(limit)
+
+
+@router.get("/cvd/estimated")
+async def get_cvd_estimated(
+    coin: str = Query("BTC"),
+    interval: str = Query("5m"),
+    limit: int = Query(500, ge=1, le=5000),
+) -> list[dict[str, Any]]:
+    """
+    Estimated CVD from historical candles, matching the BTC chart time range.
+    Uses candle close-open direction × volume as proxy for buy/sell delta.
+    Live tick-level CVD is appended at the end for the current session.
+    """
+    try:
+        import time as _time
+        now_ms = int(_time.time() * 1000)
+        interval_ms_map = {
+            "1m": 60_000, "3m": 180_000, "5m": 300_000, "15m": 900_000,
+            "30m": 1_800_000, "1h": 3_600_000, "4h": 14_400_000, "1d": 86_400_000,
+        }
+        interval_ms = interval_ms_map.get(interval, 300_000)
+        start_ms = now_ms - (limit * interval_ms)
+
+        raw = _client.get_all_candles(coin, interval, start_ms, now_ms)
+        if raw.is_empty():
+            return []
+
+        cvd_cum = 0.0
+        points = []
+        for row in raw.iter_rows(named=True):
+            direction = 1.0 if row["close"] >= row["open"] else -1.0
+            delta = direction * row["volume"]
+            cvd_cum += delta
+            points.append({
+                "ts": row["timestamp"],
+                "cvd": round(cvd_cum, 6),
+                "source": "candle",
+            })
+
+        _ensure_ws()
+        live_history = _aggregator.get_cvd_history(5000)
+        if live_history and points:
+            offset = points[-1]["cvd"]
+            last_candle_ts = points[-1]["ts"]
+
+            # Downsample live ticks: one point per candle interval
+            # so the CVD time axis matches the BTC chart scale
+            relevant = [lp for lp in live_history if lp["ts"] > last_candle_ts]
+            if relevant:
+                # Group by interval bucket, keep last value per bucket
+                buckets: dict[int, float] = {}
+                for lp in relevant:
+                    bucket = (lp["ts"] // interval_ms) * interval_ms
+                    buckets[bucket] = round(offset + lp["cvd"], 6)
+
+                for bucket_ts in sorted(buckets):
+                    points.append({"ts": bucket_ts, "cvd": buckets[bucket_ts], "source": "live"})
+
+        return points
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to compute estimated CVD: {e}")
 
 
 @router.get("/footprint")
