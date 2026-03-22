@@ -177,7 +177,8 @@ export async function fetchCandles(
   limit: number = 1000
 ): Promise<Candle[]> {
   const coin = symbol.replace('-PERP', '');
-  const url = `${API_BASE_URL}/api/hl/candles?coin=${coin}&interval=${timeframe}&limit=${limit}`;
+  const clampedLimit = Math.min(limit, 5000);
+  const url = `${API_BASE_URL}/api/hl/candles?coin=${coin}&interval=${timeframe}&limit=${clampedLimit}`;
   
   try {
     const response = await fetch(url, { cache: 'no-store' });

@@ -22,11 +22,10 @@ const AVAILABLE_INDICATORS = [
   { id: 'sma', name: 'SMA(20)', color: '#FFA500', length: 20 },
 ];
 const AVAILABLE_LIMITS = [
+  { value: 500, label: '500 bars' },
   { value: 1000, label: '1K bars' },
+  { value: 2000, label: '2K bars' },
   { value: 5000, label: '5K bars' },
-  { value: 15000, label: '15K bars' },
-  { value: 30000, label: '30K bars' },
-  { value: 50000, label: '50K bars' },
 ];
 
 interface IndicatorOverlay {
@@ -41,7 +40,7 @@ export function ChartPanel() {
   const [symbol, setSymbol] = useState<string>('BTC-PERP');
   const [timeframe, setTimeframe] = useState<string>('1d');
   const [selectedIndicator, setSelectedIndicator] = useState<string>('none');
-  const [barsLimit, setBarsLimit] = useState<number>(15000);
+  const [barsLimit, setBarsLimit] = useState<number>(1000);
   const [showCVD, setShowCVD] = useState<boolean>(false);
   
   const [candles, setCandles] = useState<Candle[]>([]);
