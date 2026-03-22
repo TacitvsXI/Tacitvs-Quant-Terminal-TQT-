@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
     });
 
     // Log error using our error logger
-    logBoundaryError(error, errorInfo, {
+    logBoundaryError(error, { componentStack: errorInfo.componentStack ?? undefined }, {
       boundaryType: "ErrorBoundary",
     });
 

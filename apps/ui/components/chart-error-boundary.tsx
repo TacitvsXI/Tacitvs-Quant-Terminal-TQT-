@@ -44,7 +44,7 @@ export function ChartErrorBoundary({ children }: ChartErrorBoundaryProps) {
     <ErrorBoundary
       fallback={<ChartErrorFallback />}
       onError={(error, errorInfo) => {
-        logBoundaryError(error, errorInfo, {
+        logBoundaryError(error, { componentStack: errorInfo.componentStack ?? undefined }, {
           boundaryType: "ChartErrorBoundary",
           chartComponent: true,
         });

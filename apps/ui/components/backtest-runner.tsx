@@ -33,10 +33,7 @@ export function BacktestRunner() {
     runBacktest({
       strategy: formData.strategy,
       market: formData.market,
-      interval: formData.interval,
-      days_back: formData.daysBack,
-      initial_capital: formData.initialCapital,
-      risk_pct: formData.riskPct,
+      timeframe: formData.interval,
     });
   };
 

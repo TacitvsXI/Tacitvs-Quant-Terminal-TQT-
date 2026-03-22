@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useUIStore } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
 
 export const KEYBOARD_SHORTCUTS = {
   navigation: {
@@ -22,7 +22,7 @@ export const KEYBOARD_SHORTCUTS = {
 
 export function useKeyboardShortcuts() {
   const router = useRouter();
-  const { setCommandPaletteOpen } = useUIStore();
+  const { setCommandPaletteOpen } = useAppStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

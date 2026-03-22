@@ -181,19 +181,19 @@ function PriceChartInner({
                     y={entryPrice} 
                     stroke="var(--color-secondary)" 
                     strokeDasharray="5 5"
-                    label={{ value: "Entry", position: "topRight" }}
+                    label={{ value: "Entry", position: "right" as const }}
                   />
                   <ReferenceLine 
                     y={stopPrice} 
                     stroke="var(--color-danger)" 
                     strokeDasharray="5 5"
-                    label={{ value: "Stop", position: "bottomRight" }}
+                    label={{ value: "Stop", position: "right" as const }}
                   />
                   <ReferenceLine 
                     y={targetPrice} 
                     stroke="#16A34A" 
                     strokeDasharray="5 5"
-                    label={{ value: "Target", position: "topRight" }}
+                    label={{ value: "Target", position: "right" as const }}
                   />
                 </>
               )}

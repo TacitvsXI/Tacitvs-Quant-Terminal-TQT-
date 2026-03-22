@@ -1,13 +1,14 @@
 "use client";
 
-import { MainLayout } from "@/components/layout";
+import { Navigation } from "@/components/Navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RollingMetrics } from "@/components/charts/rolling-metrics";
 
 export default function METRICS() {
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--bg)]">
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -97,6 +98,6 @@ export default function METRICS() {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </div>
   );
 }

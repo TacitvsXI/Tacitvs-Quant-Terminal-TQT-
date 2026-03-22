@@ -43,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           transition: { duration: 0.1 }
         }}
         ref={ref}
-        {...props}
+        {...(props as any)}
       />
     );
   }
