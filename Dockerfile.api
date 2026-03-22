@@ -7,6 +7,9 @@ COPY apps/api/ ./apps/api/
 
 RUN pip install --no-cache-dir -r apps/api/requirements.txt
 
+# Verify core/data was copied correctly
+RUN python -c "import os; assert os.path.isfile('/app/core/data/__init__.py'), 'core/data missing!'; print('core/data OK:', os.listdir('/app/core/data/'))"
+
 ENV PYTHONPATH=/app:/app/apps/api
 
 CMD ["python", "/app/apps/api/start.py"]
