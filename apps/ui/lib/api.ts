@@ -169,14 +169,15 @@ export const queryKeys = {
 // ===== NEW CHART API FUNCTIONS =====
 
 /**
- * Fetch candlestick data
+ * Fetch candlestick data — uses live Hyperliquid API via orderflow router
  */
 export async function fetchCandles(
   symbol: string,
   timeframe: string,
   limit: number = 1000
 ): Promise<Candle[]> {
-  const url = `${API_BASE_URL}/api/candles?symbol=${symbol}&tf=${timeframe}&limit=${limit}`;
+  const coin = symbol.replace('-PERP', '');
+  const url = `${API_BASE_URL}/api/hl/candles?coin=${coin}&interval=${timeframe}&limit=${limit}`;
   
   try {
     const response = await fetch(url, { cache: 'no-store' });
@@ -276,14 +277,15 @@ export async function fetchAvailableIndicators(): Promise<{
 }
 
 /**
- * Fetch CVD (Cumulative Volume Delta) data
+ * Fetch CVD (Cumulative Volume Delta) data — uses live Hyperliquid API
  */
 export async function fetchCVD(
   symbol: string,
   timeframe: string,
-  limit: number = 15000
+  limit: number = 5000
 ): Promise<Array<{ time: number; value: number; delta: number }>> {
-  const url = `${API_BASE_URL}/api/cvd?symbol=${symbol}&tf=${timeframe}&limit=${limit}`;
+  const coin = symbol.replace('-PERP', '');
+  const url = `${API_BASE_URL}/api/hl/cvd/estimated?coin=${coin}&interval=${timeframe}&limit=${Math.min(limit, 5000)}`;
   
   try {
     const response = await fetch(url, { cache: 'no-store' });
@@ -292,7 +294,12 @@ export async function fetchCVD(
       throw new Error(`Failed to fetch CVD: ${response.statusText}`);
     }
     
-    return await response.json();
+    const raw: Array<{ ts: number; cvd: number; source: string }> = await response.json();
+    return raw.map((point, i, arr) => ({
+      time: Math.floor(point.ts / 1000),
+      value: point.cvd,
+      delta: i > 0 ? point.cvd - arr[i - 1].cvd : 0,
+    }));
   } catch (error) {
     console.error('Error fetching CVD:', error);
     throw error;

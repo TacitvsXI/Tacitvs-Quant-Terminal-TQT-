@@ -126,44 +126,56 @@ async def get_indicator(
         List of indicator values with timestamps
     """
     try:
-        # Try primary data directory first
-        file_path = DATA_DIR / symbol / f"{tf}.parquet"
+        close_prices = None
+        timestamps = None
         
-        # Fallback to API data directory
+        # Try Parquet files first
+        file_path = DATA_DIR / symbol / f"{tf}.parquet"
         if not file_path.exists():
             file_path = API_DATA_DIR / symbol / f"{tf}.parquet"
         
-        if not file_path.exists():
-            raise HTTPException(
-                status_code=404,
-                detail=f"Data not found for {symbol} on {tf} timeframe"
-            )
+        if file_path.exists():
+            df = pl.read_parquet(file_path)
+            if 'close' not in df.columns:
+                raise HTTPException(status_code=500, detail="Close price column not found")
+            
+            timestamp_col = df['timestamp']
+            if timestamp_col.dtype in [pl.Datetime, pl.Date]:
+                df = df.with_columns((pl.col('timestamp').dt.epoch(time_unit='s')).alias('timestamp'))
+            elif timestamp_col.dtype in [pl.Int64, pl.Int32, pl.UInt64, pl.UInt32]:
+                max_val = timestamp_col.max()
+                if max_val and max_val > 2_000_000_000_000:
+                    df = df.with_columns((pl.col('timestamp') // 1000).alias('timestamp'))
+            
+            close_prices = df['close'].to_numpy()
+            timestamps = df['timestamp'].to_numpy()
+        else:
+            # Fallback: fetch live candles from Hyperliquid
+            try:
+                from core.data.hyperliquid_client import HyperliquidClient
+                import time as _time
+                
+                client = HyperliquidClient()
+                coin = symbol.replace('-PERP', '')
+                now_ms = int(_time.time() * 1000)
+                interval_ms_map = {
+                    "1m": 60_000, "5m": 300_000, "15m": 900_000,
+                    "1h": 3_600_000, "4h": 14_400_000, "1d": 86_400_000,
+                }
+                interval_ms = interval_ms_map.get(tf, 3_600_000)
+                start_ms = now_ms - (limit * interval_ms)
+                
+                raw = client.get_all_candles(coin, tf, start_ms, now_ms)
+                if raw.is_empty():
+                    raise HTTPException(status_code=404, detail=f"No live data for {symbol}")
+                
+                close_prices = raw['close'].to_numpy()
+                timestamps = (raw['timestamp'] // 1000).to_numpy()
+            except ImportError:
+                raise HTTPException(status_code=404, detail=f"No data for {symbol} on {tf}")
         
-        # Read data
-        df = pl.read_parquet(file_path)
-        
-        if 'close' not in df.columns:
-            raise HTTPException(
-                status_code=500,
-                detail="Close price column not found in data"
-            )
-        
-        # Convert timestamp to Unix seconds if needed
-        timestamp_col = df['timestamp']
-        if timestamp_col.dtype in [pl.Datetime, pl.Date]:
-            df = df.with_columns(
-                (pl.col('timestamp').dt.epoch(time_unit='s')).alias('timestamp')
-            )
-        elif timestamp_col.dtype in [pl.Int64, pl.Int32, pl.UInt64, pl.UInt32]:
-            max_val = timestamp_col.max()
-            if max_val and max_val > 2000000000000:
-                df = df.with_columns(
-                    (pl.col('timestamp') // 1000).alias('timestamp')
-                )
-        
-        # Convert to numpy for calculations
-        close_prices = df['close'].to_numpy()
-        timestamps = df['timestamp'].to_numpy()
+        if close_prices is None:
+            raise HTTPException(status_code=404, detail=f"No data for {symbol}")
         
         # Calculate indicator
         indicator_lower = indicator.lower()
