@@ -45,7 +45,7 @@ export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: 
     return deduped;
   }, [history]);
 
-  // Create chart once — only on mount, height change, or theme change
+  // Create chart once — only on mount or height change
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -112,7 +112,37 @@ export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: 
       seriesRef.current = null;
       zeroRef.current = null;
     };
-  }, [height, theme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height]);
+
+  // Update theme colors in-place — no chart recreation, no data loss
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return;
+    const colors = getChartThemeColors(theme);
+
+    chartRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: colors.background },
+        textColor: colors.text,
+      },
+      grid: {
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid },
+      },
+    });
+
+    seriesRef.current.applyOptions({ color: colors.upColor });
+  }, [theme]);
+
+  // Reset incremental state when interval changes (data is entirely different)
+  const prevIntervalRef = useRef(interval);
+  useEffect(() => {
+    if (prevIntervalRef.current !== interval) {
+      prevIntervalRef.current = interval;
+      initializedRef.current = false;
+      dataLenRef.current = 0;
+    }
+  }, [interval]);
 
   // Update data — initial setData, then incremental update()
   useEffect(() => {
@@ -122,7 +152,6 @@ export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: 
     const newLen = chartData.length;
 
     if (!initializedRef.current || newLen < prevLen) {
-      // First load or data reset: full setData
       seriesRef.current.setData(chartData);
       initializedRef.current = true;
 
@@ -135,15 +164,12 @@ export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: 
 
       chartRef.current?.timeScale().scrollToRealTime();
     } else if (newLen > prevLen) {
-      // Incremental: only update new points
       for (let i = prevLen; i < newLen; i++) {
         seriesRef.current.update(chartData[i]);
       }
-      // Extend zero line
       const last = chartData[newLen - 1];
       zeroRef.current.update({ time: last.time, value: 0 });
     } else if (newLen === prevLen && newLen > 0) {
-      // Same count but last value might have changed (same-second update)
       seriesRef.current.update(chartData[newLen - 1]);
     }
 
@@ -151,7 +177,7 @@ export default function CVDLive({ height = 160, interval = '5m', limit = 500 }: 
   }, [chartData]);
 
   const cvdVal = cvdState?.cvd ?? 0;
-  const cvdColor = cvdVal >= 0 ? '#00FF84' : '#fe0174';
+  const cvdColor = cvdVal >= 0 ? 'var(--bull)' : 'var(--bear)';
 
   return (
     <div className="relative w-full">

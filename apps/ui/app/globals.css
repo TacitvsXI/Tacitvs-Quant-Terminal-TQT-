@@ -17,31 +17,52 @@
   --accent: #00FF84;
   --accent2: #00CC66;
   --accent-rgb: 0, 255, 132;
+
+  /* Directional colors: buy/sell, up/down (default = Matrix) */
+  --bull: #00FF84;
+  --bear: #FFAA00;
+  --bull-rgb: 0, 255, 132;
+  --bear-rgb: 255, 170, 0;
   
   /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* Matrix Theme - Research / Simulation */
+/* Matrix Theme — Military radar: phosphor green + amber warning
+   Think Raytheon radar scope, old-school CRT terminal */
 html[data-theme="matrix"] {
   --accent: #00FF84;
   --accent2: #00CC66;
   --accent-rgb: 0, 255, 132;
+  --bull: #00FF84;
+  --bear: #FFAA00;
+  --bull-rgb: 0, 255, 132;
+  --bear-rgb: 255, 170, 0;
 }
 
-/* BlackOps Theme - Execution / Risk Mode */
+/* BlackOps Theme — Tactical HUD: cold cyan + threat crimson
+   Think F-35 helmet display, target lock acquisition */
 html[data-theme="blackops"] {
   --accent: #fe0174;
   --accent2: #f82909;
   --accent-rgb: 254, 1, 116;
+  --bull: #00E5FF;
+  --bear: #FF0055;
+  --bull-rgb: 0, 229, 255;
+  --bear-rgb: 255, 0, 85;
 }
 
-/* Neon Theme - Post-Analysis / Reporting */
+/* Neon Theme — Synthwave arcade: electric teal + neon fuchsia
+   Classic 80s retrowave complementary pair */
 html[data-theme="neon"] {
   --accent: #319ff8;
   --accent2: #422d94;
   --accent-rgb: 49, 159, 248;
+  --bull: #00FFCC;
+  --bear: #FF00AA;
+  --bull-rgb: 0, 255, 204;
+  --bear-rgb: 255, 0, 170;
 }
 
 @theme inline {
@@ -165,8 +186,24 @@ body {
   text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.3);
 }
 
-/* Status Colors */
-.status-ok { color: #00FF84; }
+/* Status Colors — bull/bear follow theme, warning/neutral stay universal */
+.status-ok { color: var(--bull); }
 .status-warning { color: #FFB800; }
-.status-error { color: #fe0174; }
+.status-error { color: var(--bear); }
 .status-neutral { color: #d0d0d0; }
+
+/* Boot / reveal animation */
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-up-in 0.4s ease-out both;
+}

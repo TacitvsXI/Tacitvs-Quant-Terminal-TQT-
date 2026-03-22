@@ -34,13 +34,30 @@ export const metadata: Metadata = {
   },
 };
 
+const THEME_RESTORE_SCRIPT = `
+(function(){
+  try {
+    var raw = localStorage.getItem('tqt-storage');
+    if (raw) {
+      var t = JSON.parse(raw).state.theme;
+      if (t === 'matrix' || t === 'blackops' || t === 'neon') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    }
+  } catch(e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="matrix">
+    <html lang="en" data-theme="matrix" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_RESTORE_SCRIPT }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

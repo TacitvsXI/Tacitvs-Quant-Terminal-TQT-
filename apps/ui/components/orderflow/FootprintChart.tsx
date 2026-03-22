@@ -8,8 +8,8 @@ function intensityColor(val: number, max: number, positive: boolean): string {
   const ratio = Math.min(Math.abs(val) / max, 1);
   const alpha = 0.15 + ratio * 0.7;
   return positive
-    ? `rgba(0, 255, 132, ${alpha})`
-    : `rgba(254, 1, 116, ${alpha})`;
+    ? `rgba(var(--bull-rgb), ${alpha})`
+    : `rgba(var(--bear-rgb), ${alpha})`;
 }
 
 export default function FootprintChart() {
@@ -61,7 +61,7 @@ export default function FootprintChart() {
           <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--fg)] opacity-50">
             FOOTPRINT (5min)
           </span>
-          <span className="text-[10px] font-mono tabular-nums" style={{ color: totalDelta >= 0 ? '#00FF84' : '#fe0174' }}>
+          <span className="text-[10px] font-mono tabular-nums" style={{ color: totalDelta >= 0 ? 'var(--bull)' : 'var(--bear)' }}>
             Delta: {totalDelta >= 0 ? '+' : ''}{totalDelta.toFixed(4)}
           </span>
         </div>
@@ -87,7 +87,7 @@ export default function FootprintChart() {
           const isPoc = level.px === poc.px;
           const buyWidth = maxVol > 0 ? (level.buy_vol / maxVol) * 100 : 0;
           const sellWidth = maxVol > 0 ? (level.sell_vol / maxVol) * 100 : 0;
-          const deltaColor = level.delta >= 0 ? '#00FF84' : '#fe0174';
+          const deltaColor = level.delta >= 0 ? 'var(--bull)' : 'var(--bear)';
 
           return (
             <div
@@ -96,7 +96,7 @@ export default function FootprintChart() {
               style={isPoc ? { background: 'rgba(var(--accent-rgb), 0.08)' } : undefined}
             >
               {/* Sell volume + bar */}
-              <span className="text-right text-[10px]" style={{ color: '#fe0174' }}>
+              <span className="text-right text-[10px]" style={{ color: 'var(--bear)' }}>
                 {level.sell_vol > 0 ? level.sell_vol.toFixed(4) : ''}
               </span>
               <div className="flex justify-end h-3">
@@ -133,7 +133,7 @@ export default function FootprintChart() {
               </div>
 
               {/* Buy volume */}
-              <span className="text-left text-[10px]" style={{ color: '#00FF84' }}>
+              <span className="text-left text-[10px]" style={{ color: 'var(--bull)' }}>
                 {level.buy_vol > 0 ? level.buy_vol.toFixed(4) : ''}
               </span>
             </div>
@@ -153,17 +153,17 @@ export default function FootprintChart() {
               style={totalDelta >= 0 ? {
                 left: '50%',
                 width: `${Math.min(Math.abs(totalDelta) / maxDelta * 50, 50)}%`,
-                background: '#00FF84',
+                background: 'var(--bull)',
               } : {
                 right: '50%',
                 width: `${Math.min(Math.abs(totalDelta) / maxDelta * 50, 50)}%`,
-                background: '#fe0174',
+                background: 'var(--bear)',
               }}
             />
           </div>
           <span
             className="text-[9px] font-mono tabular-nums"
-            style={{ color: totalDelta >= 0 ? '#00FF84' : '#fe0174' }}
+            style={{ color: totalDelta >= 0 ? 'var(--bull)' : 'var(--bear)' }}
           >
             {totalDelta >= 0 ? '+' : ''}{totalDelta.toFixed(4)}
           </span>

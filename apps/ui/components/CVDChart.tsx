@@ -187,20 +187,12 @@ export default function CVDChart({
         {data.length > 0 && (
           <div className="flex items-center gap-3 text-[10px]">
             <span className="text-[var(--fg)] opacity-60">
-              CVD: <span className={
-                data[data.length - 1].value >= 0 
-                  ? 'text-[var(--accent)]' 
-                  : 'text-red-500'
-              }>
+              CVD: <span style={{ color: data[data.length - 1].value >= 0 ? 'var(--bull)' : 'var(--bear)' }}>
                 {data[data.length - 1].value.toFixed(0)}
               </span>
             </span>
             <span className="text-[var(--fg)] opacity-60">
-              Δ: <span className={
-                data[data.length - 1].delta >= 0 
-                  ? 'text-[var(--accent)]' 
-                  : 'text-red-500'
-              }>
+              Δ: <span style={{ color: data[data.length - 1].delta >= 0 ? 'var(--bull)' : 'var(--bear)' }}>
                 {data[data.length - 1].delta >= 0 ? '+' : ''}
                 {data[data.length - 1].delta.toFixed(0)}
               </span>

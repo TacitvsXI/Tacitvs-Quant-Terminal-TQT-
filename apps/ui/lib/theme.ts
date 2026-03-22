@@ -101,9 +101,27 @@ export function initializeTheme(theme: ThemeName): void {
 }
 
 /**
- * Get chart colors based on current theme
+ * Directional (bull/bear) palette per theme — hex values for JS contexts
+ * (lightweight-charts, canvas, etc. that can't read CSS vars).
+ * Mirrors the --bull/--bear CSS custom properties in globals.css.
+ */
+const BULL_BEAR = {
+  matrix:  { bull: '#00FF84', bear: '#FFAA00', bullRgb: '0,255,132',  bearRgb: '255,170,0'  },
+  blackops:{ bull: '#00E5FF', bear: '#FF0055', bullRgb: '0,229,255',  bearRgb: '255,0,85'   },
+  neon:    { bull: '#00FFCC', bear: '#FF00AA', bullRgb: '0,255,204',  bearRgb: '255,0,170'  },
+} as const;
+
+export function getBullBearColors(theme: ThemeName) {
+  return BULL_BEAR[theme];
+}
+
+/**
+ * Get chart colors based on current theme.
+ * Candlestick up/down now uses the directional bull/bear palette.
  */
 export function getChartThemeColors(theme: ThemeName) {
+  const bb = BULL_BEAR[theme];
+
   const baseColors = {
     background: '#0B0F16',
     text: '#7FB7FF',
@@ -111,33 +129,13 @@ export function getChartThemeColors(theme: ThemeName) {
     crosshair: '#7FB7FF',
   };
 
-  const themeColors = {
-    matrix: {
-      upColor: '#00FF84',      // Matrix green
-      downColor: '#00CC66',    // Darker green
-      borderColor: '#00FF84',
-      wickUpColor: '#00FF84',
-      wickDownColor: '#00CC66',
-    },
-    blackops: {
-      upColor: '#fe0174',      // Hot pink
-      downColor: '#f82909',    // Orange-red
-      borderColor: '#fe0174',
-      wickUpColor: '#fe0174',
-      wickDownColor: '#f82909',
-    },
-    neon: {
-      upColor: '#319ff8',      // Bright blue
-      downColor: '#422d94',    // Deep purple
-      borderColor: '#319ff8',
-      wickUpColor: '#319ff8',
-      wickDownColor: '#422d94',
-    },
-  };
-
   return {
     ...baseColors,
-    ...themeColors[theme],
+    upColor: bb.bull,
+    downColor: bb.bear,
+    borderColor: bb.bull,
+    wickUpColor: bb.bull,
+    wickDownColor: bb.bear,
   };
 }
 

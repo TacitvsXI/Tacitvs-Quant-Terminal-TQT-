@@ -18,6 +18,8 @@ interface Props {
   symbol: string;
   timeframe: string;
   height?: number;
+  initialData?: LiveCandle[];
+  onReady?: () => void;
 }
 
 const TF_INTERVAL_SEC: Record<string, number> = {
@@ -26,7 +28,7 @@ const TF_INTERVAL_SEC: Record<string, number> = {
   '1d': 86400,
 };
 
-export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
+export default function ChartLive({ symbol, timeframe, height = 360, initialData, onReady }: Props) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -40,7 +42,7 @@ export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
   const { theme } = useAppStore();
   const { data: ctx } = useAssetContext('BTC');
 
-  // Create chart — only on mount, height, or theme change
+  // Create chart once — only on mount or height change
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -98,40 +100,81 @@ export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [height, theme]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height]);
 
-  // Load candles from Hyperliquid live API (not Parquet)
+  // Update theme colors in-place — no chart recreation, no data loss
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return;
+    const colors = getChartThemeColors(theme);
+
+    chartRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: colors.background },
+        textColor: colors.text,
+      },
+      grid: {
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid },
+      },
+      crosshair: {
+        vertLine: { color: colors.crosshair, labelBackgroundColor: colors.upColor },
+        horzLine: { color: colors.crosshair, labelBackgroundColor: colors.upColor },
+      },
+    });
+
+    seriesRef.current.applyOptions({
+      upColor: colors.upColor,
+      downColor: colors.downColor,
+      wickUpColor: colors.wickUpColor,
+      wickDownColor: colors.wickDownColor,
+    });
+  }, [theme]);
+
+  const initialUsedRef = useRef(false);
+
+  const applyCandles = useCallback((data: LiveCandle[]) => {
+    if (!seriesRef.current) return;
+    candlesRef.current = data;
+    tfRef.current = timeframe;
+
+    const formatted: CandlestickData[] = data.map(c => ({
+      time: c.time as CandlestickData['time'],
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+
+    seriesRef.current.setData(formatted);
+    lastBarRef.current = formatted.length > 0 ? { ...formatted[formatted.length - 1] } : null;
+    setBarCount(data.length);
+    setLastCandle(data.length > 0 ? data[data.length - 1] : null);
+    chartRef.current?.timeScale().scrollToRealTime();
+    onReady?.();
+  }, [timeframe, onReady]);
+
   const loadCandles = useCallback(async () => {
     if (!seriesRef.current) return;
     try {
       const coin = symbol.replace('-PERP', '');
       const data = await orderflowApi.liveCandles(coin, timeframe, 500);
-      candlesRef.current = data;
-      tfRef.current = timeframe;
-
-      const formatted: CandlestickData[] = data.map(c => ({
-        time: c.time as CandlestickData['time'],
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }));
-
-      seriesRef.current.setData(formatted);
-      lastBarRef.current = formatted.length > 0 ? { ...formatted[formatted.length - 1] } : null;
-
-      setBarCount(data.length);
-      setLastCandle(data.length > 0 ? data[data.length - 1] : null);
-
-      chartRef.current?.timeScale().scrollToRealTime();
+      applyCandles(data);
     } catch (e) {
       console.error('Failed to load candles:', e);
     }
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, applyCandles]);
 
+  // On mount: use initialData immediately if available, otherwise fetch
   useEffect(() => {
-    loadCandles();
-  }, [loadCandles]);
+    if (!seriesRef.current) return;
+    if (initialData?.length && !initialUsedRef.current) {
+      initialUsedRef.current = true;
+      applyCandles(initialData);
+    } else {
+      loadCandles();
+    }
+  }, [loadCandles, initialData, applyCandles]);
 
   // Periodic full refresh to pick up closed candles
   useEffect(() => {
@@ -190,7 +233,7 @@ export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
   }, [ctx]);
 
   const priceColor = lastCandle
-    ? lastCandle.close >= lastCandle.open ? '#00FF84' : '#fe0174'
+    ? lastCandle.close >= lastCandle.open ? 'var(--bull)' : 'var(--bear)'
     : 'var(--accent)';
 
   return (
@@ -203,7 +246,7 @@ export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
           <span className="text-[var(--fg)] opacity-80">{timeframe}</span>
           <span className="text-[var(--fg)] opacity-60">|</span>
           <span className="text-[var(--fg)] opacity-40">{barCount} bars</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00FF84] pulse-slow" title="Live" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] pulse-slow" title="Live" />
         </div>
 
         {lastCandle && (
@@ -212,10 +255,10 @@ export default function ChartLive({ symbol, timeframe, height = 360 }: Props) {
               O <span className="text-[var(--fg)] opacity-80">{lastCandle.open.toFixed(1)}</span>
             </span>
             <span className="text-[var(--fg)] opacity-50">
-              H <span style={{ color: '#00FF84' }}>{lastCandle.high.toFixed(1)}</span>
+              H <span style={{ color: 'var(--bull)' }}>{lastCandle.high.toFixed(1)}</span>
             </span>
             <span className="text-[var(--fg)] opacity-50">
-              L <span style={{ color: '#fe0174' }}>{lastCandle.low.toFixed(1)}</span>
+              L <span style={{ color: 'var(--bear)' }}>{lastCandle.low.toFixed(1)}</span>
             </span>
             <span className="text-[var(--fg)] opacity-50">
               C <span style={{ color: priceColor }} className="font-bold">{lastCandle.close.toFixed(1)}</span>

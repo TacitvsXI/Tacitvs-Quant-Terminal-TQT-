@@ -49,20 +49,20 @@ export default function Tape({ coin = 'BTC' }: { coin?: string }) {
         {/* Buy/Sell flow bar */}
         {stats && (
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] font-mono tabular-nums" style={{ color: '#00FF84' }}>
+            <span className="text-[10px] font-mono tabular-nums" style={{ color: 'var(--bull)' }}>
               {buyPct.toFixed(0)}%
             </span>
             <div className="flex-1 h-1.5 bg-[var(--border)] rounded overflow-hidden flex">
               <div
                 className="h-full transition-all duration-500"
-                style={{ width: `${buyPct}%`, background: '#00FF84' }}
+                style={{ width: `${buyPct}%`, background: 'var(--bull)' }}
               />
               <div
                 className="h-full transition-all duration-500"
-                style={{ width: `${sellPct}%`, background: '#fe0174' }}
+                style={{ width: `${sellPct}%`, background: 'var(--bear)' }}
               />
             </div>
-            <span className="text-[10px] font-mono tabular-nums" style={{ color: '#fe0174' }}>
+            <span className="text-[10px] font-mono tabular-nums" style={{ color: 'var(--bear)' }}>
               {sellPct.toFixed(0)}%
             </span>
           </div>
@@ -75,9 +75,9 @@ export default function Tape({ coin = 'BTC' }: { coin?: string }) {
               VWAP: <span className="text-[var(--accent)] tabular-nums">${fmtPx(stats.vwap)}</span>
             </span>
             <span className="text-[var(--fg)] opacity-50">
-              1m: <span style={{ color: '#00FF84' }} className="tabular-nums">{stats['1m_buy_vol'].toFixed(3)}</span>
+              1m: <span style={{ color: 'var(--bull)' }} className="tabular-nums">{stats['1m_buy_vol'].toFixed(3)}</span>
               {' / '}
-              <span style={{ color: '#fe0174' }} className="tabular-nums">{stats['1m_sell_vol'].toFixed(3)}</span>
+              <span style={{ color: 'var(--bear)' }} className="tabular-nums">{stats['1m_sell_vol'].toFixed(3)}</span>
             </span>
           </div>
         )}
@@ -129,7 +129,7 @@ export default function Tape({ coin = 'BTC' }: { coin?: string }) {
       >
         {filtered.map((t, i) => {
           const isBuy = t.side === 'B';
-          const sideColor = isBuy ? '#00FF84' : '#fe0174';
+          const sideColor = isBuy ? 'var(--bull)' : 'var(--bear)';
           const bgAlpha = t.large ? '0.12' : '0';
           const textWeight = t.large ? 'font-bold' : '';
 
@@ -138,7 +138,7 @@ export default function Tape({ coin = 'BTC' }: { coin?: string }) {
               key={`${t.ts}-${i}`}
               className={`px-3 py-[3px] flex items-center text-[11px] font-mono tabular-nums border-b border-[var(--border)] border-opacity-30 hover:bg-[var(--grid)] transition-colors ${textWeight}`}
               style={{
-                background: t.large ? `rgba(${isBuy ? '0,255,132' : '254,1,116'}, ${bgAlpha})` : undefined,
+                background: t.large ? `rgba(var(${isBuy ? '--bull-rgb' : '--bear-rgb'}), ${bgAlpha})` : undefined,
               }}
             >
               <span className="w-16 text-[var(--fg)] opacity-50 text-[10px]">
@@ -172,9 +172,9 @@ export default function Tape({ coin = 'BTC' }: { coin?: string }) {
         <div className="px-3 py-1.5 border-t border-[var(--border)] flex items-center justify-between text-[9px] font-mono">
           <span className="text-[var(--fg)] opacity-40">LARGE ({'>'}0.5 BTC)</span>
           <span>
-            <span style={{ color: '#00FF84' }}>{stats.large_buy} buy</span>
+            <span style={{ color: 'var(--bull)' }}>{stats.large_buy} buy</span>
             {' / '}
-            <span style={{ color: '#fe0174' }}>{stats.large_sell} sell</span>
+            <span style={{ color: 'var(--bear)' }}>{stats.large_sell} sell</span>
           </span>
         </div>
       )}

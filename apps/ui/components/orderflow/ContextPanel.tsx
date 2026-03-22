@@ -54,9 +54,9 @@ export default function ContextPanel({ coin = 'BTC' }: { coin?: string }) {
   }
 
   const change = ctx.prevDayPx ? ((ctx.markPx - ctx.prevDayPx) / ctx.prevDayPx) * 100 : 0;
-  const changeColor = change >= 0 ? '#00FF84' : '#fe0174';
-  const fundingColor = ctx.funding >= 0 ? '#00FF84' : '#fe0174';
-  const imbColor = imb ? (imb.imbalance > 0 ? '#00FF84' : '#fe0174') : 'var(--fg)';
+  const changeColor = change >= 0 ? 'var(--bull)' : 'var(--bear)';
+  const fundingColor = ctx.funding >= 0 ? 'var(--bull)' : 'var(--bear)';
+  const imbColor = imb ? (imb.imbalance > 0 ? 'var(--bull)' : 'var(--bear)') : 'var(--fg)';
 
   // Use orderbook for mid and spread (single source of truth)
   const mid = book?.mid ?? ctx.midPx;
@@ -98,7 +98,7 @@ export default function ContextPanel({ coin = 'BTC' }: { coin?: string }) {
                 className="h-full transition-all duration-300"
                 style={{
                   width: `${((imb.bid_vol / (imb.bid_vol + imb.ask_vol)) * 100).toFixed(0)}%`,
-                  background: '#00FF84',
+                  background: 'var(--bull)',
                 }}
               />
             </div>
@@ -107,8 +107,8 @@ export default function ContextPanel({ coin = 'BTC' }: { coin?: string }) {
             </span>
           </div>
           <div className="flex justify-between text-[10px] font-mono opacity-60">
-            <span style={{ color: '#00FF84' }}>{imb.bid_vol.toFixed(3)} bid</span>
-            <span style={{ color: '#fe0174' }}>{imb.ask_vol.toFixed(3)} ask</span>
+            <span style={{ color: 'var(--bull)' }}>{imb.bid_vol.toFixed(3)} bid</span>
+            <span style={{ color: 'var(--bear)' }}>{imb.ask_vol.toFixed(3)} ask</span>
           </div>
         </>
       )}
