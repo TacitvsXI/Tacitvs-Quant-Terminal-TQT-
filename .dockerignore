@@ -1,0 +1,7 @@
+**/__pycache__
+**/*.pyc
+.git
+.next
+node_modules
+apps/ui
+*.md
