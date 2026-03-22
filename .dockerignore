@@ -1,7 +1,12 @@
 **/__pycache__
 **/*.pyc
+**/.pytest_cache
 .git
 .next
 node_modules
 apps/ui
+coverage
+reports
 *.md
+.dockerignore
+railway.toml

@@ -2,13 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY core/ ./core/
-COPY apps/api/ ./apps/api/
+# Single COPY to avoid Railway layer cache issues with selective copies
+COPY . .
 
 RUN pip install --no-cache-dir -r apps/api/requirements.txt
 
-# Verify core/data was copied correctly
-RUN python -c "import os; assert os.path.isfile('/app/core/data/__init__.py'), 'core/data missing!'; print('core/data OK:', os.listdir('/app/core/data/'))"
+# Verify core/data is present
+RUN ls /app/core/data/__init__.py && echo "core/data OK"
 
 ENV PYTHONPATH=/app:/app/apps/api
 
