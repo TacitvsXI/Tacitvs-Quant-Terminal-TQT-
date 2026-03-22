@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - LAB Module
+ * 🔷 TEZERAKT - Quant Terminal - LAB Module
  * Research, Backtests, Monte Carlo, Walk-Forward
  */
 
@@ -10,9 +10,7 @@ import { Navigation } from '@/components/Navigation';
 import { TelemetryStrip } from '@/components/TelemetryStrip';
 import { CommandPalette } from '@/components/CommandPalette';
 import { DataPanel, GridMetrics } from '@/components/DataPanel';
-import { MonteCarloFanChart } from '@/components/charts/monte-carlo-fan';
-import { EquityCurve } from '@/components/charts/equity-curve';
-import { DrawdownChart } from '@/components/charts/drawdown-chart';
+import { ChartPanel } from '@/components/ChartPanel';
 import { useAppStore } from '@/lib/store';
 import { playBeep, playDoubleBeep } from '@/lib/audio';
 
@@ -143,18 +141,10 @@ export default function LAB() {
           </DataPanel>
         </div>
         
-        {/* Charts */}
-        <div className="mb-6">
-          <EquityCurve />
-        </div>
-        
-        <div className="mb-6">
-          <DrawdownChart />
-        </div>
-        
-        <div className="mb-6">
-          <MonteCarloFanChart />
-        </div>
+        {/* Live Chart */}
+        <DataPanel title="Market Chart — Real-Time Visualization" className="mb-6" glow>
+          <ChartPanel />
+        </DataPanel>
         
         {/* Trade List */}
         <DataPanel title="Trade History">

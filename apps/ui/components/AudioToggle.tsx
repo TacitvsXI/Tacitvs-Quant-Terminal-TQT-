@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Audio Toggle
+ * 🔷 TEZERAKT QUANT TERMINAL - Audio Toggle
  * Enable/disable system sounds
  */
 

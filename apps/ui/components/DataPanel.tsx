@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Data Panel Component
+ * 🔷 TEZERAKT QUANT TERMINAL - Data Panel Component
  * Industrial-style panel for metrics display
  */
 

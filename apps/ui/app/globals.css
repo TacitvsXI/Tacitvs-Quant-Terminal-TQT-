@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   🧠 TACITVS QUANT TERMINAL
+   🔷 TEZERAKT - Quant Terminal
    Retro Cyberpunk + Post-Military Industrial
    ============================================ */
 
@@ -17,31 +17,52 @@
   --accent: #00FF84;
   --accent2: #00CC66;
   --accent-rgb: 0, 255, 132;
+
+  /* Directional colors: buy/sell, up/down (default = Matrix) */
+  --bull: #00FF84;
+  --bear: #FFAA00;
+  --bull-rgb: 0, 255, 132;
+  --bear-rgb: 255, 170, 0;
   
   /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* Matrix Theme - Research / Simulation */
+/* Matrix Theme — Military radar: phosphor green + amber warning
+   Think Raytheon radar scope, old-school CRT terminal */
 html[data-theme="matrix"] {
   --accent: #00FF84;
   --accent2: #00CC66;
   --accent-rgb: 0, 255, 132;
+  --bull: #00FF84;
+  --bear: #FFAA00;
+  --bull-rgb: 0, 255, 132;
+  --bear-rgb: 255, 170, 0;
 }
 
-/* BlackOps Theme - Execution / Risk Mode */
+/* BlackOps Theme — Tactical HUD: cold cyan + threat crimson
+   Think F-35 helmet display, target lock acquisition */
 html[data-theme="blackops"] {
   --accent: #fe0174;
   --accent2: #f82909;
   --accent-rgb: 254, 1, 116;
+  --bull: #00E5FF;
+  --bear: #FF0055;
+  --bull-rgb: 0, 229, 255;
+  --bear-rgb: 255, 0, 85;
 }
 
-/* Neon Theme - Post-Analysis / Reporting */
+/* Neon Theme — Synthwave arcade: electric teal + neon fuchsia
+   Classic 80s retrowave complementary pair */
 html[data-theme="neon"] {
   --accent: #319ff8;
   --accent2: #422d94;
   --accent-rgb: 49, 159, 248;
+  --bull: #00FFCC;
+  --bear: #FF00AA;
+  --bull-rgb: 0, 255, 204;
+  --bear-rgb: 255, 0, 170;
 }
 
 @theme inline {
@@ -165,148 +186,24 @@ body {
   text-shadow: 0 0 4px rgba(var(--accent-rgb), 0.3);
 }
 
-/* Status Colors */
-.status-ok { color: #00FF84; }
+/* Status Colors — bull/bear follow theme, warning/neutral stay universal */
+.status-ok { color: var(--bull); }
 .status-warning { color: #FFB800; }
-.status-error { color: #fe0174; }
+.status-error { color: var(--bear); }
 .status-neutral { color: #d0d0d0; }
 
-/* ============================================
-   📡 TACITVS RADIO PANEL STYLES
-   ============================================ */
-
-/* Radio Panel Container */
-.radio-panel {
-  --bg-primary: rgba(11, 11, 11, 0.95);
-  background: var(--bg-primary);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Radio Range Slider Custom Styling */
-input[type="range"].accent-\[var\(--accent\)\] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type="range"].accent-\[var\(--accent\)\]::-webkit-slider-track {
-  height: 4px;
-  background: var(--grid);
-  border-radius: 2px;
-}
-
-input[type="range"].accent-\[var\(--accent\)\]::-moz-range-track {
-  height: 4px;
-  background: var(--grid);
-  border-radius: 2px;
-}
-
-input[type="range"].accent-\[var\(--accent\)\]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 14px;
-  width: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6);
-  margin-top: -5px;
-  transition: all 0.2s ease;
-}
-
-input[type="range"].accent-\[var\(--accent\)\]::-moz-range-thumb {
-  height: 14px;
-  width: 14px;
-  border: none;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6);
-  transition: all 0.2s ease;
-}
-
-input[type="range"].accent-\[var\(--accent\)\]:hover::-webkit-slider-thumb {
-  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.8), 
-              0 0 20px rgba(var(--accent-rgb), 0.4);
-  transform: scale(1.1);
-}
-
-input[type="range"].accent-\[var\(--accent\)\]:hover::-moz-range-thumb {
-  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.8), 
-              0 0 20px rgba(var(--accent-rgb), 0.4);
-  transform: scale(1.1);
-}
-
-/* Radio Button States */
-.radio-btn {
-  position: relative;
-  overflow: hidden;
-}
-
-.radio-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(var(--accent-rgb), 0.2), 
-    transparent
-  );
-  transition: left 0.5s ease;
-}
-
-.radio-btn:hover::before {
-  left: 100%;
-}
-
-/* Radio Station Indicator Animation */
-@keyframes radio-pulse {
-  0%, 100% { 
-    opacity: 1; 
-    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
+/* Boot / reveal animation */
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  50% { 
-    opacity: 0.7; 
-    box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.6);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.radio-active {
-  animation: radio-pulse 2s ease-in-out infinite;
+.animate-in {
+  animation: fade-up-in 0.4s ease-out both;
 }
-
-/* Loading State for Radio */
-@keyframes radio-loading {
-  0% { content: '[BUFFERING.]'; }
-  33% { content: '[BUFFERING..]'; }
-  66% { content: '[BUFFERING...]'; }
-  100% { content: '[BUFFERING.]'; }
-}
-
-/* Streaming Indicator */
-@keyframes streaming-bars {
-  0%, 100% { height: 40%; }
-  50% { height: 100%; }
-}
-
-.streaming-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  height: 12px;
-}
-
-.streaming-indicator span {
-  width: 2px;
-  background: var(--accent);
-  animation: streaming-bars 0.8s ease-in-out infinite;
-}
-
-.streaming-indicator span:nth-child(1) { animation-delay: 0s; }
-.streaming-indicator span:nth-child(2) { animation-delay: 0.1s; }
-.streaming-indicator span:nth-child(3) { animation-delay: 0.2s; }
-.streaming-indicator span:nth-child(4) { animation-delay: 0.3s; }
-

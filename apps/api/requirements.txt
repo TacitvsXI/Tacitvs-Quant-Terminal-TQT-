@@ -6,6 +6,13 @@ pydantic>=2.6.0
 # Работа с данными (совместимо с Python 3.13)
 pandas>=2.2.0
 numpy>=1.26.0
+polars>=0.20.0
+
+# HTTP requests
+requests>=2.32.0
+
+# WebSocket (Hyperliquid live data)
+websocket-client>=1.7.0
 
 # HTTP requests
 requests>=2.31.0

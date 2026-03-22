@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Navigation
+ * 🔷 TEZERAKT - Quant Terminal - Navigation
  * Terminal-style navigation bar with API status
  */
 
@@ -7,8 +7,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { TacitvsLogoMinimal } from './TacitvsLogo';
+import { usePathname, useRouter } from 'next/navigation';
+import { TacitvsLogo } from './TacitvsLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { AudioToggle } from './AudioToggle';
 import { useAppStore } from '@/lib/store';
@@ -17,18 +17,37 @@ import { useAPIHealth } from '@/lib/hooks';
 
 const NAV_ITEMS = [
   { href: '/', label: 'DASHBOARD', shortcut: '⌘1' },
-  { href: '/LAB', label: 'LAB', shortcut: '⌘2' },
-  { href: '/OPS', label: 'OPS', shortcut: '⌘3' },
+  { href: '/FLOW', label: 'FLOW', shortcut: '⌘2' },
+  { href: '/LAB', label: 'LAB', shortcut: '⌘3' },
+  { href: '/OPS', label: 'OPS', shortcut: '⌘4' },
 ] as const;
 
 export const Navigation: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { audioEnabled, setApiConnected } = useAppStore();
   const { data: health, isError } = useAPIHealth();
   
   React.useEffect(() => {
     setApiConnected(!isError && !!health);
   }, [health, isError, setApiConnected]);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const idx = parseInt(e.key, 10);
+      if (idx >= 1 && idx <= NAV_ITEMS.length) {
+        e.preventDefault();
+        const target = NAV_ITEMS[idx - 1];
+        if (target.href !== pathname) {
+          playBeep('focus', audioEnabled);
+          router.push(target.href);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [pathname, audioEnabled, router]);
   
   const handleNavClick = () => {
     playBeep('focus', audioEnabled);
@@ -42,14 +61,16 @@ export const Navigation: React.FC = () => {
       <div className="max-w-[1800px] mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo & Title */}
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-3 hover-glow transition-all">
-            <TacitvsLogoMinimal size={28} />
+          <Link href="/" className="flex items-center gap-4 hover-glow transition-all group">
+            <div className="transition-transform group-hover:scale-110 duration-200">
+              <TacitvsLogo size={42} />
+            </div>
             <div>
-              <h1 className="text-sm font-mono font-bold text-[var(--accent)] glow">
-                TACITVS
+              <h1 className="text-lg font-mono font-bold text-[var(--accent)] glow-strong tracking-wider">
+                TEZERAKT
               </h1>
-              <p className="text-[10px] font-mono text-[var(--fg)] -mt-0.5">
-                QUANT TERMINAL
+              <p className="text-[10px] font-mono text-[var(--fg)] -mt-1 tracking-wide opacity-70">
+                Quant Terminal
               </p>
             </div>
           </Link>

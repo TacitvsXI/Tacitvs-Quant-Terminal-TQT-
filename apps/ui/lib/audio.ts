@@ -1,7 +1,6 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Audio System
+ * 🔷 TEZERAKT - Quant Terminal - Audio System
  * Web Audio API for system sounds and feedback
- * Separate volume control for system sounds and radio
  */
 
 type BeepEvent = 
@@ -24,91 +23,18 @@ const SOUND_MAP: Record<BeepEvent, { freq: number; duration: number; type?: Osci
 };
 
 let audioContext: AudioContext | null = null;
-let systemGainNode: GainNode | null = null;
-let radioGainNode: GainNode | null = null;
 
 /**
  * Initialize AudioContext (lazy)
  */
 function getAudioContext(): AudioContext {
   if (!audioContext && typeof window !== 'undefined') {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // Create separate gain nodes for system sounds and radio
-    systemGainNode = audioContext.createGain();
-    systemGainNode.gain.value = 0.3; // System sounds at 30% by default
-    systemGainNode.connect(audioContext.destination);
-    
-    radioGainNode = audioContext.createGain();
-    radioGainNode.gain.value = 1.0; // Radio at full gain (controlled by HTML5 audio element)
-    radioGainNode.connect(audioContext.destination);
+    const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (AudioContextClass) {
+      audioContext = new AudioContextClass();
+    }
   }
   return audioContext!;
-}
-
-/**
- * Get system gain node
- */
-export function getSystemGainNode(): GainNode | null {
-  getAudioContext(); // Ensure context is initialized
-  return systemGainNode;
-}
-
-/**
- * Get radio gain node
- */
-export function getRadioGainNode(): GainNode | null {
-  getAudioContext(); // Ensure context is initialized
-  return radioGainNode;
-}
-
-/**
- * Set system sounds volume (0.0 to 1.0)
- */
-export function setSystemVolume(volume: number): void {
-  if (systemGainNode) {
-    systemGainNode.gain.value = Math.max(0, Math.min(1, volume));
-  }
-}
-
-/**
- * Crossfade between two audio elements
- * @param fromElement - Element to fade out
- * @param toElement - Element to fade in
- * @param duration - Crossfade duration in seconds
- */
-export function crossfade(
-  fromElement: HTMLAudioElement,
-  toElement: HTMLAudioElement,
-  duration: number = 1.5
-): Promise<void> {
-  return new Promise((resolve) => {
-    const steps = 30;
-    const interval = (duration * 1000) / steps;
-    let step = 0;
-
-    const fromStartVolume = fromElement.volume;
-    const toTargetVolume = toElement.volume;
-    toElement.volume = 0;
-
-    const fadeInterval = setInterval(() => {
-      step++;
-      const progress = step / steps;
-
-      // Fade out from element
-      fromElement.volume = fromStartVolume * (1 - progress);
-      
-      // Fade in to element
-      toElement.volume = toTargetVolume * progress;
-
-      if (step >= steps) {
-        clearInterval(fadeInterval);
-        fromElement.pause();
-        fromElement.volume = fromStartVolume; // Reset volume
-        resolve();
-      }
-    }, interval);
-  });
 }
 
 /**
@@ -131,13 +57,7 @@ export function playBeep(
     oscillator.frequency.value = config.freq;
     
     oscillator.connect(gainNode);
-    
-    // Connect to system gain node instead of directly to destination
-    if (systemGainNode) {
-      gainNode.connect(systemGainNode);
-    } else {
-      gainNode.connect(ctx.destination);
-    }
+    gainNode.connect(ctx.destination);
     
     // Envelope: quick attack, exponential decay
     const now = ctx.currentTime;
@@ -171,5 +91,4 @@ export function playErrorSound(enabled: boolean = true): void {
   playBeep('error', enabled);
   setTimeout(() => playBeep('error', enabled), 150);
 }
-
 

@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Theme Manager
+ * 🔷 TEZERAKT - Quant Terminal - Theme Manager
  * Dynamic theme switching with logo and favicon updates
  */
 
@@ -51,51 +51,46 @@ export function getThemeColors(): { accent: string; accent2: string } {
   };
 }
 
+// Маппинг тем на SVG фавиконы
+const FAVICON_MAP = {
+  matrix: '/tezerakt-logo-green.svg',
+  blackops: '/tezerakt-logo-red.svg',
+  neon: '/tezerakt-logo-blue.svg',
+} as const;
+
 /**
- * Generate dynamic favicon based on current theme
+ * Update dynamic favicon based on current theme
+ * Использует те же самые SVG файлы что и основной логотип
  */
 export function updateFavicon(): void {
   if (typeof window === 'undefined') return;
   
-  const { accent } = getThemeColors();
+  const theme = (document.documentElement.getAttribute('data-theme') || 'matrix') as ThemeName;
+  const faviconSrc = FAVICON_MAP[theme];
   
-  const canvas = document.createElement('canvas');
-  canvas.width = 64;
-  canvas.height = 64;
+  console.log(`🔷 Updating favicon to theme: ${theme} → ${faviconSrc}`);
   
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  // Удаляем все существующие favicon links
+  const existingLinks = document.querySelectorAll<HTMLLinkElement>('link[rel*="icon"]');
+  existingLinks.forEach(link => link.remove());
   
-  // Black background
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, 64, 64);
-  
-  // Draw "T" shape in accent color
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 4;
-  ctx.lineCap = 'square';
-  
-  // Horizontal bar of T
-  ctx.beginPath();
-  ctx.moveTo(16, 20);
-  ctx.lineTo(48, 20);
-  ctx.stroke();
-  
-  // Vertical bar of T
-  ctx.beginPath();
-  ctx.moveTo(32, 20);
-  ctx.lineTo(32, 48);
-  ctx.stroke();
-  
-  // Update favicon
-  const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? 
-               document.createElement('link');
+  // Создаем новый favicon link с cache busting
+  const link = document.createElement('link');
   link.rel = 'icon';
-  link.href = canvas.toDataURL('image/png');
+  link.type = 'image/svg+xml';
+  link.href = `${faviconSrc}?v=${Date.now()}`; // Cache busting
   
-  if (!document.querySelector('link[rel="icon"]')) {
-    document.head.appendChild(link);
-  }
+  document.head.appendChild(link);
+  
+  // Также обновляем shortcut icon для некоторых браузеров
+  const shortcutLink = document.createElement('link');
+  shortcutLink.rel = 'shortcut icon';
+  shortcutLink.type = 'image/svg+xml';
+  shortcutLink.href = `${faviconSrc}?v=${Date.now()}`;
+  
+  document.head.appendChild(shortcutLink);
+  
+  console.log(`✅ Favicon updated successfully`);
 }
 
 /**
@@ -103,5 +98,44 @@ export function updateFavicon(): void {
  */
 export function initializeTheme(theme: ThemeName): void {
   setTheme(theme);
+}
+
+/**
+ * Directional (bull/bear) palette per theme — hex values for JS contexts
+ * (lightweight-charts, canvas, etc. that can't read CSS vars).
+ * Mirrors the --bull/--bear CSS custom properties in globals.css.
+ */
+const BULL_BEAR = {
+  matrix:  { bull: '#00FF84', bear: '#FFAA00', bullRgb: '0,255,132',  bearRgb: '255,170,0'  },
+  blackops:{ bull: '#00E5FF', bear: '#FF0055', bullRgb: '0,229,255',  bearRgb: '255,0,85'   },
+  neon:    { bull: '#00FFCC', bear: '#FF00AA', bullRgb: '0,255,204',  bearRgb: '255,0,170'  },
+} as const;
+
+export function getBullBearColors(theme: ThemeName) {
+  return BULL_BEAR[theme];
+}
+
+/**
+ * Get chart colors based on current theme.
+ * Candlestick up/down now uses the directional bull/bear palette.
+ */
+export function getChartThemeColors(theme: ThemeName) {
+  const bb = BULL_BEAR[theme];
+
+  const baseColors = {
+    background: '#0B0F16',
+    text: '#7FB7FF',
+    grid: '#1B2230',
+    crosshair: '#7FB7FF',
+  };
+
+  return {
+    ...baseColors,
+    upColor: bb.bull,
+    downColor: bb.bear,
+    borderColor: bb.bull,
+    wickUpColor: bb.bull,
+    wickDownColor: bb.bear,
+  };
 }
 

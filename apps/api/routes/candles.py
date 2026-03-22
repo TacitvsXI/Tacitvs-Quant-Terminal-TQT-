@@ -1,185 +1,135 @@
 """
-Candles API Routes - endpoints для получения исторических данных.
-
-Provides:
-- GET /candles/{market}/{interval} - получить свечи с кэшированием
-- POST /candles/batch - получить несколько рынков одновременно
+Candles API Routes
+Provides historical OHLCV data for charting
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-import sys
+from fastapi import APIRouter, Query, HTTPException
+from typing import List, Dict, Any
+import polars as pl
 from pathlib import Path
+import sys
 
-# Add project root to path
+# Add root to path
 ROOT_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
-from core.data.hyperliquid_client import HyperliquidClient
+router = APIRouter()
 
-router = APIRouter(prefix="/api/candles", tags=["candles"])
-
-# Will be set from main.py
-data_manager = None
-
-
-class CandleResponse(BaseModel):
-    """Response with candle data."""
-    market: str
-    interval: str
-    candles: List[Dict[str, Any]]
-    from_cache: bool
-    count: int
+# Data directory
+DATA_DIR = ROOT_DIR / "data" / "historical"
+API_DATA_DIR = ROOT_DIR / "apps" / "api" / "data" / "historical"
 
 
-class BatchCandleRequest(BaseModel):
-    """Request for multiple markets at once."""
-    markets: List[str] = Field(..., description="List of markets (e.g. ['BTC-PERP', 'ETH-PERP'])")
-    interval: str = Field(..., description="Interval (1m, 5m, 15m, 1h, 4h, 1d)")
-    days_back: int = Field(default=30, ge=1, le=365, description="Number of days to fetch")
-
-
-class BatchCandleResponse(BaseModel):
-    """Response with data for multiple markets."""
-    data: Dict[str, CandleResponse]
-    total_candles: int
-
-
-@router.get("/{market}/{interval}")
+@router.get("/candles")
 async def get_candles(
-    market: str,
-    interval: str,
-    days_back: int = Query(default=7, ge=1, le=365, description="Days of history"),
-    force_refresh: bool = Query(default=False, description="Force fetch from API")
-) -> CandleResponse:
+    symbol: str = Query(..., description="Symbol (e.g., BTC-PERP)"),
+    tf: str = Query("1d", description="Timeframe (1m, 5m, 15m, 1h, 4h, 1d)"),
+    limit: int = Query(15000, ge=1, le=50000, description="Number of candles"),
+) -> List[Dict[str, Any]]:
     """
-    Get historical candle data for a market.
-    
-    This endpoint:
-    1. Checks local cache first
-    2. Fetches from Hyperliquid if needed
-    3. Stores in cache for future requests
-    4. Returns incremental updates
+    Get historical OHLCV candles for a symbol.
     
     Args:
-        market: Market symbol (e.g. 'BTC-PERP', 'ETH-PERP')
-        interval: Timeframe (1m, 5m, 15m, 1h, 4h, 1d)
-        days_back: Number of days of historical data
-        force_refresh: Force fetch from API ignoring cache
-    
+        symbol: Market symbol (BTC-PERP, ETH-PERP, SOL-PERP)
+        tf: Timeframe (1m, 5m, 15m, 1h, 4h, 1d)
+        limit: Number of candles to return (default 15000, max 50000)
+        
     Returns:
-        CandleResponse with candles array
+        List of candles with time, open, high, low, close, volume
     """
     try:
-        # Extract coin from market (BTC-PERP -> BTC)
-        coin = market.replace('-PERP', '')
+        # Try primary data directory first
+        file_path = DATA_DIR / symbol / f"{tf}.parquet"
         
-        # Calculate timestamps
-        end_time = int(datetime.now().timestamp() * 1000)
-        start_time = int((datetime.now() - timedelta(days=days_back)).timestamp() * 1000)
+        # Fallback to API data directory
+        if not file_path.exists():
+            file_path = API_DATA_DIR / symbol / f"{tf}.parquet"
         
-        # Use DataManager which handles caching automatically
-        try:
-            df = data_manager.get_candles(
-                market=market,
-                interval=interval,
-                days_back=days_back,
-                force_refresh=force_refresh
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Data not found for {symbol} on {tf} timeframe"
             )
-            
-            # Get cache status from DataManager
-            from_cache = data_manager.last_from_cache
-            
-            if df is None or len(df) == 0:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"No data found for {market} {interval}"
-                )
-            
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-        except Exception as e:
+        
+        # Read with Polars (blazing fast! 🔥)
+        df = pl.read_parquet(file_path)
+        
+        # Ensure required columns exist
+        required_cols = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        
+        if missing_cols:
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to fetch candles: {str(e)}"
+                detail=f"Missing columns in data: {missing_cols}"
             )
         
-        # Convert to response format
-        candles = df.to_dict('records')
+        # Take last N candles and sort by time
+        df = df.tail(limit).sort('timestamp')
         
-        return CandleResponse(
-            market=market,
-            interval=interval,
-            candles=candles,
-            from_cache=False,
-            count=len(candles)
-        )
+        # Convert timestamp to Unix seconds (for Lightweight Charts)
+        # Handle datetime, milliseconds, or seconds
+        timestamp_col = df['timestamp']
         
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # Check if it's a datetime type
+        if timestamp_col.dtype in [pl.Datetime, pl.Date]:
+            # Convert datetime to Unix timestamp (seconds)
+            df = df.with_columns(
+                (pl.col('timestamp').dt.epoch(time_unit='s')).alias('timestamp')
+            )
+        # Check if it's milliseconds (value > year 2033 in seconds)
+        elif timestamp_col.dtype in [pl.Int64, pl.Int32, pl.UInt64, pl.UInt32]:
+            max_val = timestamp_col.max()
+            if max_val and max_val > 1_000_000_000_000:  # Milliseconds (>2001 in ms)
+                df = df.with_columns(
+                    (pl.col('timestamp') // 1000).alias('timestamp')
+                )
+        
+        # Convert to dict for JSON response
+        candles = df.select([
+            pl.col('timestamp').alias('time'),
+            'open',
+            'high', 
+            'low',
+            'close',
+            'volume'
+        ]).to_dicts()
+        
+        return candles
+    
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to fetch candles: {str(e)}"
+            detail=f"Error reading candles: {str(e)}"
         )
 
 
-@router.post("/batch")
-async def get_candles_batch(request: BatchCandleRequest) -> BatchCandleResponse:
+@router.get("/candles/available")
+async def get_available_data() -> Dict[str, Any]:
     """
-    Get candles for multiple markets at once.
-    
-    More efficient than multiple individual requests.
-    
-    Args:
-        request: BatchCandleRequest with markets list
+    Get list of available symbols and timeframes.
     
     Returns:
-        BatchCandleResponse with data for all markets
+        Dictionary with available markets and timeframes
     """
-    results = {}
-    total_candles = 0
-    
-    for market in request.markets:
-        try:
-            candle_response = await get_candles(
-                market=market,
-                interval=request.interval,
-                days_back=request.days_back,
-                force_refresh=False
-            )
-            results[market] = candle_response
-            total_candles += candle_response.count
-        except HTTPException as e:
-            # Include error in response but don't fail entire request
-            results[market] = CandleResponse(
-                market=market,
-                interval=request.interval,
-                candles=[],
-                from_cache=False,
-                count=0
-            )
-    
-    return BatchCandleResponse(
-        data=results,
-        total_candles=total_candles
-    )
-
-
-@router.get("/intervals")
-async def get_supported_intervals() -> Dict[str, Any]:
-    """Get list of supported intervals."""
-    return {
-        "intervals": HyperliquidClient.VALID_INTERVALS,
-        "description": {
-            "1m": "1 minute",
-            "5m": "5 minutes",
-            "15m": "15 minutes",
-            "1h": "1 hour",
-            "4h": "4 hours",
-            "1d": "1 day"
-        }
+    available = {
+        "symbols": [],
+        "timeframes": ["1m", "5m", "15m", "1h", "4h", "1d"]
     }
+    
+    # Scan data directory
+    if DATA_DIR.exists():
+        for symbol_dir in DATA_DIR.iterdir():
+            if symbol_dir.is_dir():
+                available["symbols"].append(symbol_dir.name)
+    
+    # Also check API data directory
+    if API_DATA_DIR.exists():
+        for symbol_dir in API_DATA_DIR.iterdir():
+            if symbol_dir.is_dir() and symbol_dir.name not in available["symbols"]:
+                available["symbols"].append(symbol_dir.name)
+    
+    return available
 

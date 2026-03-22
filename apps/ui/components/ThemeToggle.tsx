@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Theme Toggle
+ * 🔷 TEZERAKT - Quant Terminal - Theme Toggle
  * System-style theme switcher with audio feedback
  */
 

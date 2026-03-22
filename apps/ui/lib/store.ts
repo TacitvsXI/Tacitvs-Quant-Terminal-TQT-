@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Global Store
+ * 🔷 TEZERAKT - Quant Terminal - Global Store
  * Zustand store for theme, audio, and app state management
  */
 
@@ -33,6 +33,8 @@ export interface AppState {
   // Connection status
   apiConnected: boolean;
   setApiConnected: (value: boolean) => void;
+  apiLatency: number | null;
+  setApiLatency: (value: number | null) => void;
   
   // Command Palette
   commandPaletteOpen: boolean;
@@ -74,6 +76,8 @@ export const useAppStore = create<AppState>()(
       // API Connection
       apiConnected: false,
       setApiConnected: (value) => set({ apiConnected: value }),
+      apiLatency: null,
+      setApiLatency: (value) => set({ apiLatency: value }),
       
       // Command Palette
       commandPaletteOpen: false,

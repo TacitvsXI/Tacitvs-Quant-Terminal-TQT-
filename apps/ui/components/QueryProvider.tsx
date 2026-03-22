@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - React Query Provider
+ * 🔷 TEZERAKT QUANT TERMINAL - React Query Provider
  * TanStack Query setup for API integration
  */
 

@@ -1,5 +1,5 @@
 /**
- * 🧠 TACITVS QUANT TERMINAL - Custom React Hooks
+ * 🔷 TEZERAKT - Quant Terminal - Custom React Hooks
  * Useful hooks for API and state management
  */
 

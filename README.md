@@ -1,256 +1,378 @@
-# 🎯 Tacitus Quant Terminal (TQT)
+# TEZERAKT — Quant Terminal
 
-**Professional quant trading terminal** для perpetual DEX с EV-first подходом и venue-agnostic архитектурой.
+Professional order flow trading terminal for Hyperliquid perpetuals.  
+EV-first approach. Maker-first execution. Built for signal validation before capital deployment.
 
-[![Week 1](https://img.shields.io/badge/Week%201-Complete-success)](docs/week-01/IMPLEMENTATION_SUMMARY.md)
-[![Week 2](https://img.shields.io/badge/Week%202-Complete-success)](docs/week-02/WEEK_02_PROGRESS.md)
-[![Week 3](https://img.shields.io/badge/Week%203-Complete-success)](docs/week-03/WEEK_03_PROGRESS.md)
-[![Week 4](https://img.shields.io/badge/Week%204-Complete-success)](docs/FRONTEND_DETAILED_PLAN.md)
-
-> 📊 **[→ PROJECT STATUS - Полный обзор работы](PROJECT_STATUS.md)** 📊
+**Stack:** Python 3.13 (FastAPI) + Next.js 16 (React 19, Lightweight Charts)  
+**Venue:** Hyperliquid (BTC-PERP primary)
 
 ---
 
-## 🚀 Quick Start
+## Architecture
 
-```bash
-# Clone & setup
-git clone https://github.com/you/Tacitvs-Quant-Terminal-TQT.git
-cd Tacitvs-Quant-Terminal-TQT
-
-# Automated setup & demo
-./RUN_NOW.sh
-
-# Or manual:
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-pip install -r apps/api/requirements.txt
-python tests/test_integration_demo.py
+```
+                        ┌─────────────────────────────┐
+                        │      Hyperliquid API         │
+                        │  (Mainnet / Testnet)         │
+                        └──────────┬──────────────────-┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+               WebSocket        REST          REST
+            (live trades,    (candles,      (L2 book,
+             l2Book)        meta, funding)  recentTrades)
+                    │              │              │
+                    ▼              ▼              ▼
+         ┌──────────────────────────────────────────────┐
+         │              FastAPI Backend                  │
+         │              (localhost:8080)                 │
+         │                                              │
+         │  ┌────────────────┐  ┌────────────────────┐  │
+         │  │ OrderFlow      │  │ Hyperliquid Client │  │
+         │  │ Aggregator     │  │ (REST)             │  │
+         │  │ (in-memory)    │  │                    │  │
+         │  │                │  │ • get_candles      │  │
+         │  │ • CVD          │  │ • get_l2_book      │  │
+         │  │ • Footprint    │  │ • get_meta         │  │
+         │  │ • Tape stats   │  │ • get_funding      │  │
+         │  │ • Book imbal.  │  │ • get_recent_trades│  │
+         │  └───────┬────────┘  └────────────────────┘  │
+         │          │                                    │
+         │  ┌───────▼────────┐                           │
+         │  │ OrderFlow      │                           │
+         │  │ Recorder       │                           │
+         │  │ (persistence)  │                           │
+         │  │                │                           │
+         │  │ → tape.parquet │                           │
+         │  │ → cvd.parquet  │                           │
+         │  │ → footprint.pq │                           │
+         │  │ → signals.pq   │                           │
+         │  └────────────────┘                           │
+         └──────────────────┬───────────────────────────-┘
+                            │
+                      REST API (JSON)
+                   /api/hl/* endpoints
+                            │
+                            ▼
+         ┌──────────────────────────────────────────────┐
+         │              Next.js Frontend                 │
+         │              (localhost:3000)                 │
+         │                                              │
+         │  React Query (polling 1s/3s/10s)             │
+         │                                              │
+         │  ┌──────────┐ ┌──────┐ ┌──────────────────┐  │
+         │  │ChartLive │ │CVD   │ │ContextPanel      │  │
+         │  │(candles) │ │Live  │ │(mark/mid/spread  │  │
+         │  │          │ │      │ │ funding/OI/vol)  │  │
+         │  └──────────┘ └──────┘ └──────────────────┘  │
+         │  ┌──────────┐ ┌──────┐ ┌──────────────────┐  │
+         │  │Footprint │ │Tape  │ │Book Imbalance    │  │
+         │  │Heatmap   │ │(live │ │Gauge (10 lvl)    │  │
+         │  │          │ │fills)│ │                   │  │
+         │  └──────────┘ └──────┘ └──────────────────┘  │
+         └──────────────────────────────────────────────┘
 ```
 
-**Полная документация:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
+---
+
+## Data Flow — Live vs Historical
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     LIVE PATH (real-time)                        │
+│                                                                 │
+│  Hyperliquid WS ──→ on_trade() ──→ OrderFlowAggregator         │
+│                                     │                           │
+│                                     ├──→ CVD (cumulative delta) │
+│                                     ├──→ Tape (recent fills)    │
+│                                     ├──→ Footprint (px × time)  │
+│                                     └──→ REST API → Dashboard   │
+│                                                                 │
+│  Also: on_trade() ──→ OrderFlowRecorder ──→ Parquet (persist)   │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   HISTORICAL PATH (archive)                     │
+│                                                                 │
+│  Hyperliquid REST ──→ candleSnapshot ──→ Live candle chart      │
+│                                                                 │
+│  data/orderflow/*.parquet ──→ Replay, journal, backtesting      │
+│                                                                 │
+│  Parquet files (daily rotation):                                │
+│    tape_YYYY-MM-DD.parquet      Raw trade stream                │
+│    cvd_YYYY-MM-DD.parquet       Sampled CVD snapshots (5s)      │
+│    footprint_YYYY-MM-DD.parquet Derived volume matrix           │
+│    signals_YYYY-MM-DD.parquet   Detected setups + outcomes      │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## ✨ Features
+## Hyperliquid Integration — What's Implemented
 
-### ✅ Week 1 Complete
-- **Strategy Framework** - IStrategy interface, Tortoise (Donchian breakout)
-- **EV Calculator** - Полные издержки (fees, funding, slippage) в R-units
-- **Risk Manager** - 1% R sizing, daily limits, kill-switch
-- **FastAPI Backend** - 6 REST endpoints, Swagger docs
-- **Integration Demo** - Полный цикл: Signal → Sizing → EV → Decision
+### REST Client (`core/data/hyperliquid_client.py`)
 
-### ✅ Week 2 Complete
-- **Hyperliquid Integration** - REST API client с retry logic
-- **Data Pipeline** - DataManager с кэшированием, Parquet storage
-- **Real Data** - BTC/ETH/SOL исторические данные (1d, 4h, 1h)
-- **38 Tests** - Unit + integration, 81% coverage
+| Method | Hyperliquid Endpoint | Status |
+|--------|---------------------|--------|
+| `get_candles()` | `candleSnapshot` | done |
+| `get_all_candles()` | paginated candles (up to 5000/req) | done |
+| `get_l2_book()` | `l2Book` (20 levels/side) | done |
+| `get_recent_trades()` | `recentTrades` | done |
+| `get_meta()` | `meta` (universe, decimals, leverage) | done |
+| `get_meta_and_asset_ctxs()` | `metaAndAssetCtxs` (mark, funding, OI) | done |
+| `get_all_mids()` | `allMids` | done |
+| `get_funding_history()` | `fundingHistory` | done |
+| `get_clearinghouse_state()` | `clearinghouseState` (positions) | done |
+| `get_user_fills()` | `userFills` | done |
+| `get_open_orders()` | `openOrders` | done |
+| `get_user_fees()` | `userFees` | done |
 
-### ✅ Week 3 Complete
-- **Backtest Engine** - Реалистичная симуляция с fees
-- **Walk-Forward** - OOS validation (rolling & anchored)
-- **Monte Carlo** - 1000+ permutations, percentile analysis
-- **Advanced Metrics** - Calmar, Sortino, VaR, CVaR
-- **Parameter Optimizer** - Grid search с overfitting protection
-- **Report Generator** - Markdown/HTML reports
-- **62+ Tests** - Research tools fully tested
+### WebSocket Client (`core/data/hyperliquid_ws.py`)
 
-### 🚧 Week 4 In Progress
-- **Frontend Development** - Sci-fi terminal UI (Next.js + TypeScript)
-- **Component Library** - Cards, Buttons, Charts, Lamps
-- **OPS Terminal** - Table Matrix, Controls, Ops Log
-- **LAB Terminal** - Backtest, Walk-Forward, Monte Carlo, Optimizer
+| Subscription | Channel | Status |
+|-------------|---------|--------|
+| Live trades | `trades` | done |
+| L2 order book | `l2Book` | done |
+| Live candles | `candle` | done |
+| Auto-reconnect | — | done |
 
-**Full Status:** [PROJECT_STATUS.md](PROJECT_STATUS.md)
+### Order Flow Aggregator (`core/data/orderflow.py`)
+
+| Metric | Description | Status |
+|--------|-------------|--------|
+| CVD | Cumulative buy − sell volume from tick stream | done |
+| CVD Estimated | Historical CVD from candle direction × volume | done |
+| Footprint | Price × time volume matrix with delta/imbalance | done |
+| Tape | Ring buffer of recent fills with large-print detection | done |
+| Tape Stats | Buy/sell %, VWAP, 1m flow, large trade counts | done |
+| Book Imbalance | Bid/ask volume ratio from L2 snapshot (N levels) | done |
+
+### Persistence (`core/data/orderflow_recorder.py`)
+
+| Layer | File | What |
+|-------|------|------|
+| Raw | `tape_*.parquet` | Every fill from WebSocket |
+| Sampled | `cvd_*.parquet` | CVD snapshots every 5 seconds |
+| Derived | `footprint_*.parquet` | Aggregated price × time buckets |
+| Signals | `signals_*.parquet` | Detected setups with entry/sl/tp/R:R/outcome |
 
 ---
 
-## 📊 Architecture
+## API Endpoints
+
+### Order Flow (`/api/hl/*`)
+
+| Method | Endpoint | Poll | Description |
+|--------|----------|------|-------------|
+| GET | `/api/hl/candles` | on TF change | Live candles from Hyperliquid API |
+| GET | `/api/hl/orderbook` | 3s | L2 book snapshot (bid/ask/spread/mid) |
+| GET | `/api/hl/context` | 3s | Mark, mid, oracle, funding, OI, 24h vol |
+| GET | `/api/hl/trades/recent` | — | Recent trades (REST) |
+| GET | `/api/hl/tape` | 1s | Live tape from WS with notional + large flag |
+| GET | `/api/hl/tape/stats` | 1s | Buy/sell %, VWAP, 1m flow |
+| GET | `/api/hl/cvd` | 1s | Current CVD value |
+| GET | `/api/hl/cvd/history` | 1s | Live tick-level CVD series |
+| GET | `/api/hl/cvd/estimated` | 30s | Historical CVD from candles + live tail |
+| GET | `/api/hl/footprint` | 10s | Current footprint candle (price levels) |
+| GET | `/api/hl/footprint/candles` | 10s | Last N footprint time buckets |
+| GET | `/api/hl/imbalance` | 1s | Book imbalance ratio (configurable levels) |
+| GET | `/api/hl/funding` | — | Historical funding rates |
+| GET | `/api/hl/mids` | — | All mid prices |
+
+### History / Replay (`/api/hl/history/*`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/hl/history/tape` | Recorded trades for a date |
+| GET | `/api/hl/history/cvd` | Sampled CVD snapshots for a date |
+| GET | `/api/hl/history/footprint` | Footprint buckets for a date |
+| GET | `/api/hl/history/signals` | Detected signals for a date |
+| GET | `/api/hl/history/signals/range` | Signals across date range + stats |
+| GET | `/api/hl/recorder/stats` | Buffer sizes, files on disk |
+
+### Legacy (`/api/*`)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api/candles` | OHLCV from Parquet files |
+| GET | `/api/indicators` | RSI, EMA, SMA, Bollinger |
+| GET | `/api/volume_profile` | POC, Value Area, LVN/HVN |
+| POST | `/api/ev/calculate` | EV calculation |
+
+---
+
+## Frontend — FLOW Dashboard
+
+Live order flow observation screen at `/FLOW`:
+
+```
+┌────────────────────────────────────────────────────┬──────────────┐
+│                                                    │              │
+│             Candlestick Chart (live)               │   Context    │
+│         BTC-PERP  5m  from Hyperliquid API         │   Panel      │
+│         Last candle updates with mid price          │              │
+│                                                    │  Mark price  │
+│                                                    │  Mid price   │
+├────────────────────────────────────────────────────┤  Oracle      │
+│                                                    │  Funding     │
+│             CVD Line Chart (synced)                │  OI          │
+│         Estimated from candles + live ticks         │  24h Vol     │
+│         Time axis aligned with BTC chart           │  Spread      │
+│                                                    │              │
+├────────────────────────────────────────────────────┤  Book Imbal. │
+│                                                    │  Gauge       │
+│             Footprint Heatmap                      │              │
+│         Price × time volume matrix                 ├──────────────┤
+│         Delta coloring per level                   │              │
+│         Imbalance markers                          │   Tape       │
+│                                                    │   (live)     │
+│                                                    │              │
+│                                                    │  Side color  │
+│                                                    │  Large print │
+│                                                    │  Min filter  │
+│                                                    │  Buy/Sell %  │
+│                                                    │  VWAP        │
+│                                                    │  1m flow     │
+└────────────────────────────────────────────────────┴──────────────┘
+```
+
+**Timeframes:** 1m, 5m, 15m, 1h, 4h, 1d (synced across chart + CVD)  
+**Themes:** Matrix, BlackOps, Neon  
+**Keyboard:** Ctrl+K (command palette), Ctrl+1-4 (page nav)
+
+---
+
+## Roadmap
+
+```
+Phase 1 — Data Layer                                        ✅ DONE
+  Hyperliquid REST client (candles, meta, funding, book)
+  Hyperliquid WebSocket client (trades, l2Book, candle)
+  Order flow aggregator (CVD, footprint, tape, imbalance)
+
+Phase 2A — Observation Dashboard                            ✅ DONE
+  Live candlestick chart (real-time from Hyperliquid API)
+  CVD line chart (estimated historical + live tick)
+  Tape (color-coded fills, large prints, filters)
+  Footprint heatmap (delta, imbalance per level)
+  Book imbalance gauge + context panel
+  Parquet recorder (tape, CVD, footprint, signals)
+
+Phase 2B — Signal Overlays                                  ⬜ NEXT
+  CVD divergence detector
+  Absorption marker (imbalance + opposite tape)
+  Aggression burst detector
+  LVN rejection marker
+  Failed breakout candidate
+  Signal → signals_*.parquet with entry/sl/tp/R:R
+
+Phase 2C — Replay / Journal Mode                            ⬜ PLANNED
+  Browse historical tape/CVD/footprint by date
+  "Capture setup" → snapshot to Parquet
+  Replay past setups for pattern recognition
+
+Phase 3 — Paper Trader                                      ⬜ PLANNED
+  generate_signal() → simulate_entry() → log_result()
+  Expectancy calculation from signals_*.parquet
+  Forward-test without real orders
+
+Phase 4 — Execution Layer                                   ⬜ PLANNED
+  Hyperliquid SDK order placement
+  Maker-first limit orders with rebates
+  Position manager, partial fills, cancel/replace
+  Kill switch, max daily loss, concurrent position limits
+```
+
+---
+
+## Quick Start
+
+```bash
+# Clone
+git clone https://github.com/TacitvsXI/Tacitvs-Quant-Terminal-TQT-.git
+cd Tacitvs-Quant-Terminal-TQT
+
+# Backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r apps/api/requirements.txt
+
+# Frontend
+cd apps/ui && npm install && cd ../..
+
+# Run (two terminals)
+./start-api.sh    # API  → http://localhost:8080
+./start-ui.sh     # UI   → http://localhost:3000
+```
+
+Swagger docs: http://localhost:8080/docs
+
+---
+
+## Project Structure
 
 ```
 tqt/
 ├── apps/
-│   ├── api/           # FastAPI backend ✅
-│   └── ui/            # Next.js terminal (planned)
-├── core/
-│   ├── strategy/      # Strategy framework ✅
-│   ├── ev/            # EV calculator ✅
-│   ├── risk/          # Risk manager ✅
-│   ├── exchanges/     # Hyperliquid adapter (Week 2)
-│   ├── sim/           # Backtest & research (Week 3)
-│   └── data/          # Data pipeline (Week 2)
-├── data/              # Parquet storage
-├── tests/             # Integration tests ✅
-└── docs/              # 📚 Documentation hub
-    ├── week-01/       # Week 1 summary
-    ├── week-02/       # Current: Data integration
-    └── week-03/       # Next: Backtesting
+│   ├── api/                    # FastAPI backend
+│   │   ├── main.py             # Entry point, CORS, routers
+│   │   └── routes/
+│   │       ├── orderflow.py    # /api/hl/* (live order flow)
+│   │       ├── candles.py      # /api/candles (historical)
+│   │       ├── indicators.py   # /api/indicators
+│   │       └── volume_profile.py
+│   └── ui/                     # Next.js 16 frontend
+│       ├── app/
+│       │   ├── FLOW/page.tsx   # Order flow dashboard
+│       │   ├── LAB/            # Backtesting
+│       │   └── OPS/            # Operations
+│       ├── components/
+│       │   ├── orderflow/      # ChartLive, CVDLive, Tape,
+│       │   │                   # FootprintChart, ContextPanel
+│       │   ├── Navigation.tsx  # Nav bar + keyboard shortcuts
+│       │   └── CommandPalette.tsx
+│       └── lib/
+│           ├── orderflow.ts    # API types + fetchers
+│           └── useOrderFlow.ts # React Query hooks (polling)
+├── core/                       # Shared Python modules
+│   ├── data/
+│   │   ├── hyperliquid_client.py  # REST client
+│   │   ├── hyperliquid_ws.py      # WebSocket client
+│   │   ├── orderflow.py           # Aggregator (CVD, footprint, tape)
+│   │   └── orderflow_recorder.py  # Parquet persistence
+│   ├── ev/                     # EV calculator
+│   ├── risk/                   # Risk manager
+│   └── strategy/               # Strategy framework
+├── data/
+│   ├── historical/             # Candle Parquet files
+│   └── orderflow/              # Live recorded order flow
+└── config.yaml                 # Venues, strategies, risk limits
 ```
 
-**Детали:** [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.13, FastAPI, Uvicorn |
+| Data | Polars, Parquet, NumPy |
+| Frontend | Next.js 16, React 19, TypeScript |
+| Charts | Lightweight Charts v4 |
+| State | Zustand (local), React Query (server) |
+| Styling | Tailwind CSS v4, CSS variable themes |
+| Venue | Hyperliquid (REST + WebSocket) |
 
 ---
 
-## 🎯 Key Concepts
+## Key Concepts
 
-### R-units (Risk Units)
-- **1R** = дистанция от entry до stop в $
-- Универсальная метрика для любой стратегии
-- Sizing: `size = (1% × equity) / stop_distance`
-
-### EV-first Discipline
-- Торгуем только если **EV_net > 0** после всех издержек
-- Учитываем: fees (maker rebates!), funding, slippage, gas
-- Формула: `EV_net = p×b̄ - (1-p) - Costs_in_R`
-
-### Maker-first Execution
-- Limit orders → rebates (−1.5 bps на Hyperliquid)
-- Экономия vs taker: 6 bps = $600 на $1M notional
-- Queue awareness для оптимальных fills
-
-**Подробнее:** [docs/week-01/PROJECT_ASSESSMENT.md](docs/week-01/PROJECT_ASSESSMENT.md)
+**R-units:** 1R = distance from entry to stop. Universal sizing metric.  
+**EV-first:** Trade only when `EV_net = p×b − (1−p) − costs > 0`.  
+**Maker-first:** Limit orders for rebates (−1.5 bps on Hyperliquid). Saves ~6 bps vs taker.  
+**Signal validation before execution:** See 50+ setups visually before deploying capital.
 
 ---
 
-## 📚 Documentation
-
-### Getting Started
-- **[docs/QUICKSTART.md](docs/QUICKSTART.md)** - Установка и первый запуск
-- **[docs/week-01/PROJECT_ASSESSMENT.md](docs/week-01/PROJECT_ASSESSMENT.md)** - Зачем и почему
-- **[docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** - Структура кода
-
-### Current Week
-- **[docs/week-02/PLAN.md](docs/week-02/PLAN.md)** - Детальный план Week 2
-- **[docs/week-02/HYPERLIQUID_INTEGRATION.md](docs/week-02/HYPERLIQUID_INTEGRATION.md)** - API guide
-- **[docs/week-02/DATA_PIPELINE.md](docs/week-02/DATA_PIPELINE.md)** - Data architecture
-
-### Reference
-- **[docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md)** - REST API & Python API
-- **[docs/strategies/TORTOISE.md](docs/strategies/TORTOISE.md)** - Tortoise strategy guide
-- **[docs/strategies/STRATEGY_FRAMEWORK.md](docs/strategies/STRATEGY_FRAMEWORK.md)** - Как создавать стратегии
-
-**Навигация:** [docs/README.md](docs/README.md)
-
----
-
-## 🧪 Demo Results
-
-### Integration Test (Week 1)
-```
-📊 SIGNAL: LONG BTC-PERP @ $33,603
-   Stop:   $31,923 (-5%)
-   Target: $36,964 (+10%)
-   R:R:    2.0
-
-💰 SIZING: 0.0595 BTC (1% risk = $100)
-
-🎯 EV ANALYSIS:
-   Win rate:    45%
-   Avg win:     2.5R
-   Fees (maker): -0.006R (rebate!)
-   EV_net:      +0.571R ✅
-   
-💡 DECISION: ✅ МОЖНО ОТКРЫВАТЬ
-   Expected profit: $57/trade, $5,710/100 trades
-```
-
-**Запуск:** `./venv/bin/python tests/test_integration_demo.py`
-
----
-
-## 🛠️ Tech Stack
-
-### Backend
-- **Python 3.13** - Core strategies, EV, Risk
-- **FastAPI** - REST API gateway
-- **Pandas/NumPy** - Data processing
-- **Parquet** - Fast columnar storage
-
-### Frontend (Planned)
-- **Next.js** - Terminal UI
-- **TypeScript** - Type safety
-- **Tailwind** - Styling
-- **Recharts** - Visualization
-
-### Infrastructure
-- **Hyperliquid** - Primary venue
-- **DuckDB** - Ad-hoc analytics (planned)
-- **Docker** - Deployment (planned)
-
----
-
-## 📈 Status & Roadmap
-
-| Week | Status | Deliverables |
-|------|--------|-------------|
-| **Week 1** | ✅ Complete | Strategy framework, EV, Risk, Demo |
-| **Week 2** | ✅ Complete | Hyperliquid API, Data pipeline, Real data |
-| **Week 3** | ✅ Complete | Backtest, Walk-Forward, Monte Carlo, Optimizer |
-| **Week 4** | 🚧 In Progress | Frontend UI (OPS, LAB, METRICS, CONSOLE) |
-| **Week 5+** | 📋 Planned | Live trading, Multi-venue, Advanced features |
-
-**Детальный статус:** [PROJECT_STATUS.md](PROJECT_STATUS.md)
-
----
-
-## 💼 Career Value
-
-Этот проект демонстрирует:
-- ✅ Понимание **профессионального квант-трейдинга**
-- ✅ **EV-first** дисциплину (не просто "прибыльно на истории")
-- ✅ **Execution engineering** (maker/taker, rebates, queue)
-- ✅ **Production-ready** архитектуру (venue-agnostic, kill-switches)
-- ✅ **Full-stack** skills (Python + TypeScript + API + UI)
-
-**Подходит для:**
-- Quantitative Trader (prop-shops, HFT firms)
-- Execution Engineer
-- Quant Researcher (crypto funds)
-- Algo Trading Developer
-
-**Оценка проекта:** 9/10 ([подробнее](docs/week-01/PROJECT_ASSESSMENT.md))
-
----
-
-## 🤝 Contributing
-
-Проект в активной разработке. Документация обновляется еженедельно.
-
-**Вопросы?** Весь код прокомментирован построчно на русском!
-
----
-
-## 📞 Links
-
-- **Documentation Hub:** [docs/README.md](docs/README.md)
-- **Quick Start:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
-- **Week 2 Plan:** [docs/week-02/PLAN.md](docs/week-02/PLAN.md)
-- **API Reference:** [docs/api/API_REFERENCE.md](docs/api/API_REFERENCE.md)
-
----
-
-## 📄 License
-
-MIT (или на ваш выбор)
-
-**Disclaimer:** Not financial advice. Derivatives trading carries risk.
-
----
-
-**Last Updated:** Weeks 1-3 Complete (22 октября 2025)  
-**Next Milestone:** Week 4 - Frontend Integration (ETA: 10 days)
-
----
-
-## 📖 Key Documentation
-
-### 🎯 Start Here:
-- **[PROJECT STATUS](PROJECT_STATUS.md)** - Полный обзор проделанной и предстоящей работы
-- **[QUICKSTART](docs/QUICKSTART.md)** - How to run everything
-- **[FRONTEND DETAILED PLAN](docs/FRONTEND_DETAILED_PLAN.md)** - UI specifications
-
-### 📚 Weekly Progress:
-- **Week 1:** [IMPLEMENTATION_SUMMARY](docs/week-01/IMPLEMENTATION_SUMMARY.md)
-- **Week 2:** [WEEK_02_PROGRESS](docs/week-02/WEEK_02_PROGRESS.md)
-- **Week 3:** [WEEK_03_PROGRESS](docs/week-03/WEEK_03_PROGRESS.md)
+MIT License. Not financial advice. Derivatives trading carries substantial risk.
