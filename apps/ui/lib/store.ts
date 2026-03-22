@@ -17,15 +17,6 @@ export interface AppState {
   audioEnabled: boolean;
   toggleAudio: () => void;
   
-  // Radio
-  radioEnabled: boolean;
-  radioVolume: number;
-  radioStationIndex: number;
-  toggleRadio: () => void;
-  setRadioVolume: (volume: number) => void;
-  setRadioStationIndex: (index: number) => void;
-  nextRadioStation: () => void;
-  
   // Simulation state
   isSimulating: boolean;
   setSimulating: (value: boolean) => void;
@@ -58,17 +49,6 @@ export const useAppStore = create<AppState>()(
       audioEnabled: true,
       toggleAudio: () => set((state) => ({ audioEnabled: !state.audioEnabled })),
       
-      // Radio
-      radioEnabled: false,
-      radioVolume: 0.5,
-      radioStationIndex: 0,
-      toggleRadio: () => set((state) => ({ radioEnabled: !state.radioEnabled })),
-      setRadioVolume: (volume) => set({ radioVolume: Math.max(0, Math.min(1, volume)) }),
-      setRadioStationIndex: (index) => set({ radioStationIndex: index }),
-      nextRadioStation: () => set((state) => ({ 
-        radioStationIndex: state.radioStationIndex + 1 
-      })),
-      
       // Simulation
       isSimulating: false,
       setSimulating: (value) => set({ isSimulating: value }),
@@ -88,9 +68,6 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         theme: state.theme,
         audioEnabled: state.audioEnabled,
-        radioEnabled: state.radioEnabled,
-        radioVolume: state.radioVolume,
-        radioStationIndex: state.radioStationIndex,
       }),
     }
   )
