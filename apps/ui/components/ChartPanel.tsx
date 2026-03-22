@@ -108,7 +108,17 @@ export function ChartPanel() {
       playBeep('sim_done', audioEnabled);
     } catch (err) {
       console.error('Error loading chart data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load chart data');
+      
+      // Проверяем если это ошибка подключения к API
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load chart data';
+      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+        console.warn('⚠️  Backend API is not running!');
+        console.warn('📋 To fix: Open a new terminal and run: ./START_BACKEND_NOW.sh');
+        console.warn('📍 Or manually: cd apps/api && python -m uvicorn main:app --port 8080 --reload');
+        setError('Backend API not running. Charts will be unavailable. Check console for instructions.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

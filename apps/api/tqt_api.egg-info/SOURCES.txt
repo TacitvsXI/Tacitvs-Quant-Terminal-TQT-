@@ -8,6 +8,8 @@ routes/__init__.py
 routes/candles.py
 routes/indicators.py
 routes/volume.py
+routes/volume_profile.py
+tests/test_volume_profile_comprehensive.py
 tests/test_volume_profile_simple.py
 tqt_api.egg-info/PKG-INFO
 tqt_api.egg-info/SOURCES.txt

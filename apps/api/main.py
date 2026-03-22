@@ -24,15 +24,13 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import sys
 
-# Добавляем корневую директорию в PYTHONPATH
-# Это позволяет импортировать модули из core/
-# Path(__file__) = путь к этому файлу
-# .parent = родительская директория (apps/api/)
-# .parent.parent = еще выше (tqt/)
 ROOT_DIR = Path(__file__).parent.parent.parent
+API_DIR = Path(__file__).parent
 sys.path.insert(0, str(ROOT_DIR))
 
-# Импортируем наши модули
+import core
+core.__path__.append(str(API_DIR / "core"))
+
 from core.strategy.base import IStrategy, Signal, BarContext, SignalSide
 from core.strategy.tortoise import TortoiseStrategy
 from core.ev.ev_calculator import EVCalculator, EVResult

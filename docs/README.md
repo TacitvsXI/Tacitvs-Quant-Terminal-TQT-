@@ -1,112 +1,61 @@
-# 📚 Tacitus Quant Terminal - Документация
+# TQT Documentation
 
-Полная документация проекта, организованная по этапам разработки.
+Documentation hub for Tacitus Quant Terminal.
 
 ---
 
-## 🗂️ Структура документации
+## Structure
 
 ```
 docs/
-├── README.md                    ← Вы здесь
-├── QUICKSTART.md               → Быстрый старт
-├── PROJECT_STRUCTURE.md        → Структура проекта
+├── README.md                    ← You are here
+├── QUICKSTART.md               → Setup & first run
+├── PROJECT_STRUCTURE.md        → Code structure reference
+├── FRONTEND.md                 → Frontend architecture & design system
+├── CHART_IMPLEMENTATION.md     → Lightweight Charts integration
+├── DOCUMENTATION_STRUCTURE.md  → How docs are organized
+├── RADIO_IMPLEMENTATION.md     → Audio feedback system
 │
-├── week-01/                    ✅ Week 1 Complete
-│   ├── PROJECT_ASSESSMENT.md   → Оценка проекта (9/10)
-│   └── IMPLEMENTATION_SUMMARY.md → Что сделано
+├── api/
+│   └── API_REFERENCE.md        → REST API reference
 │
-├── week-02/                    🔄 Week 2 In Progress
-│   ├── PLAN.md                 → Детальный план Week 2
-│   ├── HYPERLIQUID_INTEGRATION.md → Подключение Hyperliquid
-│   └── DATA_PIPELINE.md        → Data pipeline архитектура
+├── strategies/
+│   ├── TORTOISE.md             → Tortoise (Donchian breakout) guide
+│   └── STRATEGY_FRAMEWORK.md   → How to create strategies
 │
-├── week-03/                    ⏳ Week 3 Planned
-│   ├── PLAN.md                 → План Week 3
-│   ├── BACKTESTING.md          → Backtest engine
-│   └── RESEARCH.md             → Walk-Forward & Monte Carlo
+├── week-01/
+│   ├── PROJECT_ASSESSMENT.md   → Project assessment
+│   └── IMPLEMENTATION_SUMMARY.md → Week 1 deliverables
 │
-├── api/                        📖 API Documentation
-│   └── API_REFERENCE.md        → Справочник по API
+├── week-02/
+│   ├── PLAN.md                 → Data integration plan
+│   ├── HYPERLIQUID_INTEGRATION.md → Hyperliquid API guide
+│   └── DATA_PIPELINE.md        → Data pipeline architecture
 │
-└── strategies/                 🧠 Strategy Guides
-    ├── TORTOISE.md             → Tortoise strategy guide
-    ├── SQUEEZE.md              → Squeeze strategy (planned)
-    └── STRATEGY_FRAMEWORK.md   → Как создавать стратегии
+└── week-03/
+    ├── PLAN.md                 → Backtesting plan
+    ├── BACKTESTING.md          → Backtest engine
+    └── RESEARCH.md             → Walk-Forward & Monte Carlo
 ```
 
 ---
 
-## 🚀 С чего начать?
+## Getting Started
 
-### Новый в проекте?
-1. **[QUICKSTART.md](QUICKSTART.md)** - установка и первый запуск
-2. **[week-01/PROJECT_ASSESSMENT.md](week-01/PROJECT_ASSESSMENT.md)** - зачем и почему
-3. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - структура кода
+1. **[QUICKSTART.md](QUICKSTART.md)** — install dependencies and run locally
+2. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** — understand the codebase
+3. **[FRONTEND.md](FRONTEND.md)** — frontend architecture, themes, components
 
-### Уже запустили Week 1?
-1. **[week-02/PLAN.md](week-02/PLAN.md)** - что делаем дальше
-2. **[week-02/HYPERLIQUID_INTEGRATION.md](week-02/HYPERLIQUID_INTEGRATION.md)** - подключение данных
+## Reference
 
-### Хотите разобраться глубже?
-1. **[api/API_REFERENCE.md](api/API_REFERENCE.md)** - все endpoints
-2. **[strategies/STRATEGY_FRAMEWORK.md](strategies/STRATEGY_FRAMEWORK.md)** - как писать стратегии
+- **[api/API_REFERENCE.md](api/API_REFERENCE.md)** — all REST endpoints
+- **[strategies/STRATEGY_FRAMEWORK.md](strategies/STRATEGY_FRAMEWORK.md)** — creating strategies
+- **[strategies/TORTOISE.md](strategies/TORTOISE.md)** — Tortoise strategy details
+- **[CHART_IMPLEMENTATION.md](CHART_IMPLEMENTATION.md)** — chart system internals
 
----
+## External
 
-## ✅ Что уже готово (Week 1)
-
-### Core Python Modules
-- ✅ Strategy Framework (`core/strategy/base.py`)
-- ✅ Tortoise Strategy (`core/strategy/tortoise.py`)
-- ✅ EV Calculator (`core/ev/ev_calculator.py`)
-- ✅ Risk Manager (`core/risk/risk_manager.py`)
-
-### Backend & API
-- ✅ FastAPI Backend (`apps/api/main.py`)
-- ✅ 6 REST endpoints работают
-- ✅ Swagger docs на `/docs`
-
-### Tests & Demo
-- ✅ Integration Demo Test
-- ✅ Полный цикл: Signal → Sizing → EV → Decision
-
-**Детали:** [week-01/IMPLEMENTATION_SUMMARY.md](week-01/IMPLEMENTATION_SUMMARY.md)
-
----
-
-## 🎯 Текущий этап: Week 2
-
-**Цель:** Подключить реальные данные с Hyperliquid
-
-**Задачи:**
-1. TypeScript Hyperliquid adapter
-2. Python data fetcher
-3. Parquet storage
-4. Historical data download
-
-**Детальный план:** [week-02/PLAN.md](week-02/PLAN.md)
-
----
-
-## 📖 Полезные ссылки
-
-### Внутренние
-- [Tacitus_Quant_Terminal_README.md](../Tacitus_Quant_Terminal_README.md) - оригинальный README
-- [RUN_NOW.sh](../RUN_NOW.sh) - быстрый запуск
-
-### Внешние
 - [Hyperliquid API Docs](https://hyperliquid.gitbook.io/hyperliquid-docs/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Pandas Documentation](https://pandas.pydata.org/docs/)
-
----
-
-## 🤝 Contributing
-
-Пока проект в активной разработке. Документация обновляется после каждой недели.
-
----
-
-**Последнее обновление:** Week 1 Complete (21 октября 2025)
+- [Lightweight Charts](https://tradingview.github.io/lightweight-charts/)
 
