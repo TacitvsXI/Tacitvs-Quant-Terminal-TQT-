@@ -80,7 +80,7 @@ async def get_candles(
         # Check if it's milliseconds (value > year 2033 in seconds)
         elif timestamp_col.dtype in [pl.Int64, pl.Int32, pl.UInt64, pl.UInt32]:
             max_val = timestamp_col.max()
-            if max_val and max_val > 2000000000000:  # Likely milliseconds
+            if max_val and max_val > 1_000_000_000_000:  # Milliseconds (>2001 in ms)
                 df = df.with_columns(
                     (pl.col('timestamp') // 1000).alias('timestamp')
                 )

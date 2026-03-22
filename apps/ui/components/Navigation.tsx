@@ -7,7 +7,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { TacitvsLogo } from './TacitvsLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { AudioToggle } from './AudioToggle';
@@ -17,18 +17,37 @@ import { useAPIHealth } from '@/lib/hooks';
 
 const NAV_ITEMS = [
   { href: '/', label: 'DASHBOARD', shortcut: '⌘1' },
-  { href: '/LAB', label: 'LAB', shortcut: '⌘2' },
-  { href: '/OPS', label: 'OPS', shortcut: '⌘3' },
+  { href: '/FLOW', label: 'FLOW', shortcut: '⌘2' },
+  { href: '/LAB', label: 'LAB', shortcut: '⌘3' },
+  { href: '/OPS', label: 'OPS', shortcut: '⌘4' },
 ] as const;
 
 export const Navigation: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { audioEnabled, setApiConnected } = useAppStore();
   const { data: health, isError } = useAPIHealth();
   
   React.useEffect(() => {
     setApiConnected(!isError && !!health);
   }, [health, isError, setApiConnected]);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const idx = parseInt(e.key, 10);
+      if (idx >= 1 && idx <= NAV_ITEMS.length) {
+        e.preventDefault();
+        const target = NAV_ITEMS[idx - 1];
+        if (target.href !== pathname) {
+          playBeep('focus', audioEnabled);
+          router.push(target.href);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [pathname, audioEnabled, router]);
   
   const handleNavClick = () => {
     playBeep('focus', audioEnabled);

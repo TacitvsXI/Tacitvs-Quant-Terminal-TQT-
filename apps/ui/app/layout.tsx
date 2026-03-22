@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeInitializer } from "@/components/ThemeInitializer";
 import { QueryProvider } from "@/components/QueryProvider";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <ThemeInitializer />
+          <CommandPalette />
           {children}
         </QueryProvider>
       </body>

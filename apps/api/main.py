@@ -144,12 +144,14 @@ from routes.candles import router as candles_router
 from routes.indicators import router as indicators_router
 from routes.volume import router as volume_router
 from routes.volume_profile import router as volume_profile_router
+from routes.orderflow import router as orderflow_router
 
 # Register routers
 app.include_router(candles_router, prefix="/api", tags=["candles"])
 app.include_router(indicators_router, prefix="/api", tags=["indicators"])
 app.include_router(volume_router, prefix="/api", tags=["volume"])
 app.include_router(volume_profile_router, prefix="/api", tags=["volume_profile"])
+app.include_router(orderflow_router, prefix="/api/hl", tags=["orderflow"])
 
 
 # ===== ENDPOINTS =====

@@ -1,7 +1,9 @@
 venues:
   hyperliquid:
-    ws_url: wss://example
-    rest_url: https://example
+    ws_url: wss://api.hyperliquid.xyz/ws
+    rest_url: https://api.hyperliquid.xyz
+    testnet_ws_url: wss://api.hyperliquid-testnet.xyz/ws
+    testnet_rest_url: https://api.hyperliquid-testnet.xyz
     fees_bps:
       maker: -1.5
       taker: 4.5
@@ -9,10 +11,11 @@ venues:
     risk_limits:
       max_daily_loss_R: 5
       max_concurrent_positions: 3
+    use_testnet: false
 
 strategies:
   - id: tortoise
-    markets: ["BTC-PERP","ETH-PERP"]
+    markets: ["BTC-PERP"]
     params:
       don_break: 20
       don_exit: 10

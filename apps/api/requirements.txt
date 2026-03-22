@@ -8,8 +8,11 @@ pandas>=2.2.0
 numpy>=1.26.0
 polars>=0.20.0
 
-# HTTP requests (для загрузки данных с бирж)
+# HTTP requests
 requests>=2.32.0
+
+# WebSocket (Hyperliquid live data)
+websocket-client>=1.7.0
 
 # Опционально (для продакшена)
 python-dotenv>=1.0.0
